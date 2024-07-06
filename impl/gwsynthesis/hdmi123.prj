@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE gowin-synthesis-project>
+<Project>
+    <Version>beta</Version>
+    <Device id="GW2AR-18C" package="QFN88PF" speed="9" partNumber="GW2AR-LV18QN88PFC9/I8"/>
+    <FileList>
+        <File path="C:\Users\Petr\Documents\FPGA\hdmi123\src\HDMI.v" type="verilog"/>
+        <File path="C:\Users\Petr\Documents\FPGA\hdmi123\src\tmds_encoder.v" type="verilog"/>
+        <File path="C:\Users\Petr\Documents\FPGA\hdmi123\src\gowin_rpll\gowin_rpll.v" type="verilog"/>
+    </FileList>
+    <OptionList>
+        <Option type="disable_insert_pad" value="0"/>
+        <Option type="looplimit" value="2000"/>
+        <Option type="output_file" value="C:\Users\Petr\Documents\FPGA\hdmi123\impl\gwsynthesis\hdmi123.vg"/>
+        <Option type="print_all_synthesis_warning" value="0"/>
+        <Option type="ram_rw_check" value="0"/>
+        <Option type="verilog_language" value="verilog-2001"/>
+        <Option type="vhdl_language" value="vhdl-1993"/>
+    </OptionList>
+</Project>

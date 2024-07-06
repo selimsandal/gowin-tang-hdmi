@@ -1,0 +1,44 @@
+[
+ {
+  "InstFile" : "C:/Users/Petr/Documents/FPGA/hdmi123/src/HDMI.v",
+  "InstLine" : 4,
+  "InstName" : "HDMI_test",
+  "ModuleFile" : "C:/Users/Petr/Documents/FPGA/hdmi123/src/HDMI.v",
+  "ModuleLine" : 4,
+  "ModuleName" : "HDMI_test",
+  "SubInsts" : [
+   {
+    "InstFile" : "C:/Users/Petr/Documents/FPGA/hdmi123/src/HDMI.v",
+    "InstLine" : 51,
+    "InstName" : "encode_R",
+    "ModuleFile" : "C:/Users/Petr/Documents/FPGA/hdmi123/src/tmds_encoder.v",
+    "ModuleLine" : 1,
+    "ModuleName" : "TMDS_encoder"
+   },
+   {
+    "InstFile" : "C:/Users/Petr/Documents/FPGA/hdmi123/src/HDMI.v",
+    "InstLine" : 52,
+    "InstName" : "encode_G",
+    "ModuleFile" : "C:/Users/Petr/Documents/FPGA/hdmi123/src/tmds_encoder.v",
+    "ModuleLine" : 1,
+    "ModuleName" : "TMDS_encoder"
+   },
+   {
+    "InstFile" : "C:/Users/Petr/Documents/FPGA/hdmi123/src/HDMI.v",
+    "InstLine" : 53,
+    "InstName" : "encode_B",
+    "ModuleFile" : "C:/Users/Petr/Documents/FPGA/hdmi123/src/tmds_encoder.v",
+    "ModuleLine" : 1,
+    "ModuleName" : "TMDS_encoder"
+   },
+   {
+    "InstFile" : "C:/Users/Petr/Documents/FPGA/hdmi123/src/HDMI.v",
+    "InstLine" : 61,
+    "InstName" : "rPLL",
+    "ModuleFile" : "C:/Users/Petr/Documents/FPGA/hdmi123/src/gowin_rpll/gowin_rpll.v",
+    "ModuleLine" : 10,
+    "ModuleName" : "Gowin_rPLL"
+   }
+  ]
+ }
+]
