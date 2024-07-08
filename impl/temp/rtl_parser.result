@@ -1,41 +1,41 @@
 [
  {
-  "InstFile" : "C:/Users/Petr/Documents/FPGA/hdmi123/src/HDMI.v",
+  "InstFile" : "C:/Users/Petr/Documents/FPGA/NanoHDMI/src/HDMI.v",
   "InstLine" : 4,
   "InstName" : "HDMI_test",
-  "ModuleFile" : "C:/Users/Petr/Documents/FPGA/hdmi123/src/HDMI.v",
+  "ModuleFile" : "C:/Users/Petr/Documents/FPGA/NanoHDMI/src/HDMI.v",
   "ModuleLine" : 4,
   "ModuleName" : "HDMI_test",
   "SubInsts" : [
    {
-    "InstFile" : "C:/Users/Petr/Documents/FPGA/hdmi123/src/HDMI.v",
-    "InstLine" : 51,
+    "InstFile" : "C:/Users/Petr/Documents/FPGA/NanoHDMI/src/HDMI.v",
+    "InstLine" : 123,
     "InstName" : "encode_R",
-    "ModuleFile" : "C:/Users/Petr/Documents/FPGA/hdmi123/src/tmds_encoder.v",
+    "ModuleFile" : "C:/Users/Petr/Documents/FPGA/NanoHDMI/src/tmds_encoder.v",
     "ModuleLine" : 1,
     "ModuleName" : "TMDS_encoder"
    },
    {
-    "InstFile" : "C:/Users/Petr/Documents/FPGA/hdmi123/src/HDMI.v",
-    "InstLine" : 52,
+    "InstFile" : "C:/Users/Petr/Documents/FPGA/NanoHDMI/src/HDMI.v",
+    "InstLine" : 124,
     "InstName" : "encode_G",
-    "ModuleFile" : "C:/Users/Petr/Documents/FPGA/hdmi123/src/tmds_encoder.v",
+    "ModuleFile" : "C:/Users/Petr/Documents/FPGA/NanoHDMI/src/tmds_encoder.v",
     "ModuleLine" : 1,
     "ModuleName" : "TMDS_encoder"
    },
    {
-    "InstFile" : "C:/Users/Petr/Documents/FPGA/hdmi123/src/HDMI.v",
-    "InstLine" : 53,
+    "InstFile" : "C:/Users/Petr/Documents/FPGA/NanoHDMI/src/HDMI.v",
+    "InstLine" : 125,
     "InstName" : "encode_B",
-    "ModuleFile" : "C:/Users/Petr/Documents/FPGA/hdmi123/src/tmds_encoder.v",
+    "ModuleFile" : "C:/Users/Petr/Documents/FPGA/NanoHDMI/src/tmds_encoder.v",
     "ModuleLine" : 1,
     "ModuleName" : "TMDS_encoder"
    },
    {
-    "InstFile" : "C:/Users/Petr/Documents/FPGA/hdmi123/src/HDMI.v",
-    "InstLine" : 61,
+    "InstFile" : "C:/Users/Petr/Documents/FPGA/NanoHDMI/src/HDMI.v",
+    "InstLine" : 133,
     "InstName" : "rPLL",
-    "ModuleFile" : "C:/Users/Petr/Documents/FPGA/hdmi123/src/gowin_rpll/gowin_rpll.v",
+    "ModuleFile" : "C:/Users/Petr/Documents/FPGA/NanoHDMI/src/gowin_rpll/gowin_rpll.v",
     "ModuleLine" : 10,
     "ModuleName" : "Gowin_rPLL"
    }

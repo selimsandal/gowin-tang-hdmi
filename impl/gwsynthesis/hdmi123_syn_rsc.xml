@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<Module name="HDMI_test" Register="82" Alu="26" Lut="79">
-    <SubModule name="encode_R" Register="14" Alu="4" Lut="46"/>
-    <SubModule name="encode_G" Register="14" Alu="4" Lut="45"/>
-    <SubModule name="encode_B" Register="14" Alu="4" Lut="59"/>
+<Module name="HDMI_test" Register="81" Alu="44" Lut="148">
+    <SubModule name="encode_R" Register="6" Alu="4" Lut="3"/>
+    <SubModule name="encode_G" Register="7" Alu="4" Lut="2"/>
+    <SubModule name="encode_B" Register="8" Alu="4" Lut="8"/>
     <SubModule name="rPLL"/>
 </Module>

@@ -1,24 +1,4 @@
 module gw_gao(
-    \CounterX[9] ,
-    \CounterX[8] ,
-    \CounterX[7] ,
-    \CounterX[6] ,
-    \CounterX[5] ,
-    \CounterX[4] ,
-    \CounterX[3] ,
-    \CounterX[2] ,
-    \CounterX[1] ,
-    \CounterX[0] ,
-    \CounterY[9] ,
-    \CounterY[8] ,
-    \CounterY[7] ,
-    \CounterY[6] ,
-    \CounterY[5] ,
-    \CounterY[4] ,
-    \CounterY[3] ,
-    \CounterY[2] ,
-    \CounterY[1] ,
-    \CounterY[0] ,
     \red[7] ,
     \red[6] ,
     \red[5] ,
@@ -45,7 +25,6 @@ module gw_gao(
     \blue[0] ,
     hSync,
     vSync,
-    clk_TMDS,
     clk,
     tms_pad_i,
     tck_pad_i,
@@ -53,26 +32,6 @@ module gw_gao(
     tdo_pad_o
 );
 
-input \CounterX[9] ;
-input \CounterX[8] ;
-input \CounterX[7] ;
-input \CounterX[6] ;
-input \CounterX[5] ;
-input \CounterX[4] ;
-input \CounterX[3] ;
-input \CounterX[2] ;
-input \CounterX[1] ;
-input \CounterX[0] ;
-input \CounterY[9] ;
-input \CounterY[8] ;
-input \CounterY[7] ;
-input \CounterY[6] ;
-input \CounterY[5] ;
-input \CounterY[4] ;
-input \CounterY[3] ;
-input \CounterY[2] ;
-input \CounterY[1] ;
-input \CounterY[0] ;
 input \red[7] ;
 input \red[6] ;
 input \red[5] ;
@@ -99,33 +58,12 @@ input \blue[1] ;
 input \blue[0] ;
 input hSync;
 input vSync;
-input clk_TMDS;
 input clk;
 input tms_pad_i;
 input tck_pad_i;
 input tdi_pad_i;
 output tdo_pad_o;
 
-wire \CounterX[9] ;
-wire \CounterX[8] ;
-wire \CounterX[7] ;
-wire \CounterX[6] ;
-wire \CounterX[5] ;
-wire \CounterX[4] ;
-wire \CounterX[3] ;
-wire \CounterX[2] ;
-wire \CounterX[1] ;
-wire \CounterX[0] ;
-wire \CounterY[9] ;
-wire \CounterY[8] ;
-wire \CounterY[7] ;
-wire \CounterY[6] ;
-wire \CounterY[5] ;
-wire \CounterY[4] ;
-wire \CounterY[3] ;
-wire \CounterY[2] ;
-wire \CounterY[1] ;
-wire \CounterY[0] ;
 wire \red[7] ;
 wire \red[6] ;
 wire \red[5] ;
@@ -152,7 +90,6 @@ wire \blue[1] ;
 wire \blue[0] ;
 wire hSync;
 wire vSync;
-wire clk_TMDS;
 wire clk;
 wire tms_pad_i;
 wire tck_pad_i;
@@ -227,7 +164,7 @@ gw_con_top  u_icon_top(
 
 ao_top u_ao_top(
     .control(control0[9:0]),
-    .data_i({\CounterX[9] ,\CounterX[8] ,\CounterX[7] ,\CounterX[6] ,\CounterX[5] ,\CounterX[4] ,\CounterX[3] ,\CounterX[2] ,\CounterX[1] ,\CounterX[0] ,\CounterY[9] ,\CounterY[8] ,\CounterY[7] ,\CounterY[6] ,\CounterY[5] ,\CounterY[4] ,\CounterY[3] ,\CounterY[2] ,\CounterY[1] ,\CounterY[0] ,\red[7] ,\red[6] ,\red[5] ,\red[4] ,\red[3] ,\red[2] ,\red[1] ,\red[0] ,\green[7] ,\green[6] ,\green[5] ,\green[4] ,\green[3] ,\green[2] ,\green[1] ,\green[0] ,\blue[7] ,\blue[6] ,\blue[5] ,\blue[4] ,\blue[3] ,\blue[2] ,\blue[1] ,\blue[0] ,hSync,vSync,clk_TMDS}),
+    .data_i({\red[7] ,\red[6] ,\red[5] ,\red[4] ,\red[3] ,\red[2] ,\red[1] ,\red[0] ,\green[7] ,\green[6] ,\green[5] ,\green[4] ,\green[3] ,\green[2] ,\green[1] ,\green[0] ,\blue[7] ,\blue[6] ,\blue[5] ,\blue[4] ,\blue[3] ,\blue[2] ,\blue[1] ,\blue[0] ,hSync,vSync}),
     .clk_i(clk)
 );
 

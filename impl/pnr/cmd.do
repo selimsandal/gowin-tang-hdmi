@@ -1,8 +1,8 @@
--d C:\Users\Petr\Documents\FPGA\hdmi123\impl\gwsynthesis\hdmi123.vg
+-d C:\Users\Petr\Documents\FPGA\NanoHDMI\impl\gwsynthesis\hdmi123.vg
 -p GW2AR-18C-QFN88PF-9
 -pn GW2AR-LV18QN88PFC9/I8
--cst C:\Users\Petr\Documents\FPGA\hdmi123\src\hdmi123.cst
--cfg C:\Users\Petr\Documents\FPGA\hdmi123\impl\pnr\device.cfg
+-cst C:\Users\Petr\Documents\FPGA\NanoHDMI\src\hdmi123.cst
+-cfg C:\Users\Petr\Documents\FPGA\NanoHDMI\impl\pnr\device.cfg
 -bit
 -tr
 -ph
