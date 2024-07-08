@@ -1,1 +1,1 @@
-My first working HDMI output on Sipeed Tang nano 20K. Its basically RGB signal converted to DVI signal and sended to HDMI. Dont use HDPI IP, just rPLL. Its pretty much port from https://www.fpga4fun.com/HDMI.html.
+My first working HDMI output on Sipeed Tang nano 20K. Its basically RGB signal converted to DVI signal and sended to HDMI. Dont use HDPI IP, just rPLL. Its pretty much port from https://www.fpga4fun.com/HDMI.html, merged with tutorial from https://projectf.io/tutorials/
