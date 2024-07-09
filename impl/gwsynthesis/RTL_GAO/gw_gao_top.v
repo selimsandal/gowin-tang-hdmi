@@ -23,8 +23,29 @@ module gw_gao(
     \blue[2] ,
     \blue[1] ,
     \blue[0] ,
-    hSync,
-    vSync,
+    \sx[9] ,
+    \sx[8] ,
+    \sx[7] ,
+    \sx[6] ,
+    \sx[5] ,
+    \sx[4] ,
+    \sx[3] ,
+    \sx[2] ,
+    \sx[1] ,
+    \sx[0] ,
+    \sy[9] ,
+    \sy[8] ,
+    \sy[7] ,
+    \sy[6] ,
+    \sy[5] ,
+    \sy[4] ,
+    \sy[3] ,
+    \sy[2] ,
+    \sy[1] ,
+    \sy[0] ,
+    hsync,
+    vsync,
+    de,
     clk,
     tms_pad_i,
     tck_pad_i,
@@ -56,8 +77,29 @@ input \blue[3] ;
 input \blue[2] ;
 input \blue[1] ;
 input \blue[0] ;
-input hSync;
-input vSync;
+input \sx[9] ;
+input \sx[8] ;
+input \sx[7] ;
+input \sx[6] ;
+input \sx[5] ;
+input \sx[4] ;
+input \sx[3] ;
+input \sx[2] ;
+input \sx[1] ;
+input \sx[0] ;
+input \sy[9] ;
+input \sy[8] ;
+input \sy[7] ;
+input \sy[6] ;
+input \sy[5] ;
+input \sy[4] ;
+input \sy[3] ;
+input \sy[2] ;
+input \sy[1] ;
+input \sy[0] ;
+input hsync;
+input vsync;
+input de;
 input clk;
 input tms_pad_i;
 input tck_pad_i;
@@ -88,8 +130,29 @@ wire \blue[3] ;
 wire \blue[2] ;
 wire \blue[1] ;
 wire \blue[0] ;
-wire hSync;
-wire vSync;
+wire \sx[9] ;
+wire \sx[8] ;
+wire \sx[7] ;
+wire \sx[6] ;
+wire \sx[5] ;
+wire \sx[4] ;
+wire \sx[3] ;
+wire \sx[2] ;
+wire \sx[1] ;
+wire \sx[0] ;
+wire \sy[9] ;
+wire \sy[8] ;
+wire \sy[7] ;
+wire \sy[6] ;
+wire \sy[5] ;
+wire \sy[4] ;
+wire \sy[3] ;
+wire \sy[2] ;
+wire \sy[1] ;
+wire \sy[0] ;
+wire hsync;
+wire vsync;
+wire de;
 wire clk;
 wire tms_pad_i;
 wire tck_pad_i;
@@ -164,7 +227,7 @@ gw_con_top  u_icon_top(
 
 ao_top u_ao_top(
     .control(control0[9:0]),
-    .data_i({\red[7] ,\red[6] ,\red[5] ,\red[4] ,\red[3] ,\red[2] ,\red[1] ,\red[0] ,\green[7] ,\green[6] ,\green[5] ,\green[4] ,\green[3] ,\green[2] ,\green[1] ,\green[0] ,\blue[7] ,\blue[6] ,\blue[5] ,\blue[4] ,\blue[3] ,\blue[2] ,\blue[1] ,\blue[0] ,hSync,vSync}),
+    .data_i({\red[7] ,\red[6] ,\red[5] ,\red[4] ,\red[3] ,\red[2] ,\red[1] ,\red[0] ,\green[7] ,\green[6] ,\green[5] ,\green[4] ,\green[3] ,\green[2] ,\green[1] ,\green[0] ,\blue[7] ,\blue[6] ,\blue[5] ,\blue[4] ,\blue[3] ,\blue[2] ,\blue[1] ,\blue[0] ,\sx[9] ,\sx[8] ,\sx[7] ,\sx[6] ,\sx[5] ,\sx[4] ,\sx[3] ,\sx[2] ,\sx[1] ,\sx[0] ,\sy[9] ,\sy[8] ,\sy[7] ,\sy[6] ,\sy[5] ,\sy[4] ,\sy[3] ,\sy[2] ,\sy[1] ,\sy[0] ,hsync,vsync,de}),
     .clk_i(clk)
 );
 

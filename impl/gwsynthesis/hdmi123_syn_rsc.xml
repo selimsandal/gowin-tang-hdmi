@@ -1,7 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<Module name="HDMI_test" Register="81" Alu="44" Lut="148">
+<Module name="HDMI_test" Register="35" Lut="33">
+    <SubModule name="s480p" Register="23" Alu="18" Lut="18"/>
+    <SubModule name="animation" Register="23" Alu="24" Lut="101"/>
     <SubModule name="encode_R" Register="6" Alu="4" Lut="3"/>
     <SubModule name="encode_G" Register="7" Alu="4" Lut="2"/>
     <SubModule name="encode_B" Register="8" Alu="4" Lut="8"/>
     <SubModule name="rPLL"/>
+    <SubModule name="gw_gao_inst_0" Register="260" Lut="234" Bsram="16"/>
 </Module>

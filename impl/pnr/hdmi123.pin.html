@@ -50,11 +50,11 @@ table.detail_table th.label {  min-width: 8%; width: 8%; }
 </tr>
 <tr>
 <td class="label">Design File</td>
-<td>C:\Users\Petr\Documents\FPGA\NanoHDMI\impl\gwsynthesis\hdmi123.vg</td>
+<td>C:\Users\Petr\Documents\FPGA\nano HDMI vzor\impl\gwsynthesis\hdmi123.vg</td>
 </tr>
 <tr>
 <td class="label">Physical Constraints File</td>
-<td>C:\Users\Petr\Documents\FPGA\NanoHDMI\src\hdmi123.cst</td>
+<td>C:\Users\Petr\Documents\FPGA\nano HDMI vzor\src\hdmi123.cst</td>
 </tr>
 <tr>
 <td class="label">Timing Constraints File</td>
@@ -78,7 +78,7 @@ table.detail_table th.label {  min-width: 8%; width: 8%; }
 </tr>
 <tr>
 <td class="label">Created Time</td>
-<td>Tue Jul  9 00:08:19 2024
+<td>Tue Jul  9 23:40:50 2024
 </td>
 </tr>
 <tr>
@@ -114,6 +114,60 @@ table.detail_table th.label {  min-width: 8%; width: 8%; }
 <td>Y</td>
 <td>in</td>
 <td>IOL29[A]</td>
+<td>LVCMOS18</td>
+<td>NA</td>
+<td>UP</td>
+<td>ON</td>
+<td>NONE</td>
+<td>NA</td>
+<td>NA</td>
+<td>OFF</td>
+<td>NA</td>
+<td>1.8</td>
+</tr>
+<tr>
+<td class="label">tms_pad_i</td>
+<td></td>
+<td>5/2</td>
+<td>N</td>
+<td>in</td>
+<td>IOR25[B]</td>
+<td>LVCMOS18</td>
+<td>NA</td>
+<td>UP</td>
+<td>ON</td>
+<td>NONE</td>
+<td>NA</td>
+<td>NA</td>
+<td>OFF</td>
+<td>NA</td>
+<td>1.8</td>
+</tr>
+<tr>
+<td class="label">tck_pad_i</td>
+<td></td>
+<td>6/2</td>
+<td>N</td>
+<td>in</td>
+<td>IOR26[A]</td>
+<td>LVCMOS18</td>
+<td>NA</td>
+<td>UP</td>
+<td>ON</td>
+<td>NONE</td>
+<td>NA</td>
+<td>NA</td>
+<td>OFF</td>
+<td>NA</td>
+<td>1.8</td>
+</tr>
+<tr>
+<td class="label">tdi_pad_i</td>
+<td></td>
+<td>7/2</td>
+<td>N</td>
+<td>in</td>
+<td>IOR26[B]</td>
 <td>LVCMOS18</td>
 <td>NA</td>
 <td>UP</td>
@@ -196,6 +250,24 @@ table.detail_table th.label {  min-width: 8%; width: 8%; }
 <td>NA</td>
 <td>NA</td>
 <td>2.5</td>
+</tr>
+<tr>
+<td class="label">tdo_pad_o</td>
+<td></td>
+<td>8/2</td>
+<td>N</td>
+<td>out</td>
+<td>IOR25[A]</td>
+<td>LVCMOS18</td>
+<td>8</td>
+<td>UP</td>
+<td>NA</td>
+<td>NA</td>
+<td>OFF</td>
+<td>NA</td>
+<td>OFF</td>
+<td>NA</td>
+<td>1.8</td>
 </tr>
 </table>
 <br/>
@@ -939,7 +1011,7 @@ table.detail_table th.label {  min-width: 8%; width: 8%; }
 </tr>
 <tr>
 <td class="label">8/2</td>
-<td>-</td>
+<td>tdo_pad_o</td>
 <td>out</td>
 <td>IOR25[A]</td>
 <td>LVCMOS18</td>
@@ -949,13 +1021,13 @@ table.detail_table th.label {  min-width: 8%; width: 8%; }
 <td>NA</td>
 <td>OFF</td>
 <td>NA</td>
-<td>NA</td>
+<td>OFF</td>
 <td>NA</td>
 <td>1.8</td>
 </tr>
 <tr>
 <td class="label">5/2</td>
-<td>-</td>
+<td>tms_pad_i</td>
 <td>in</td>
 <td>IOR25[B]</td>
 <td>LVCMOS18</td>
@@ -965,13 +1037,13 @@ table.detail_table th.label {  min-width: 8%; width: 8%; }
 <td>NONE</td>
 <td>NA</td>
 <td>NA</td>
-<td>NA</td>
+<td>OFF</td>
 <td>NA</td>
 <td>1.8</td>
 </tr>
 <tr>
 <td class="label">6/2</td>
-<td>-</td>
+<td>tck_pad_i</td>
 <td>in</td>
 <td>IOR26[A]</td>
 <td>LVCMOS18</td>
@@ -981,13 +1053,13 @@ table.detail_table th.label {  min-width: 8%; width: 8%; }
 <td>NONE</td>
 <td>NA</td>
 <td>NA</td>
-<td>NA</td>
+<td>OFF</td>
 <td>NA</td>
 <td>1.8</td>
 </tr>
 <tr>
 <td class="label">7/2</td>
-<td>-</td>
+<td>tdi_pad_i</td>
 <td>in</td>
 <td>IOR26[B]</td>
 <td>LVCMOS18</td>
@@ -997,7 +1069,7 @@ table.detail_table th.label {  min-width: 8%; width: 8%; }
 <td>NONE</td>
 <td>NA</td>
 <td>NA</td>
-<td>NA</td>
+<td>OFF</td>
 <td>NA</td>
 <td>1.8</td>
 </tr>

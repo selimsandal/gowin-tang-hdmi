@@ -1,41 +1,57 @@
 [
  {
-  "InstFile" : "C:/Users/Petr/Documents/FPGA/NanoHDMI/src/HDMI.v",
+  "InstFile" : "C:/Users/Petr/Documents/FPGA/nano HDMI vzor/src/HDMI.v",
   "InstLine" : 4,
   "InstName" : "HDMI_test",
-  "ModuleFile" : "C:/Users/Petr/Documents/FPGA/NanoHDMI/src/HDMI.v",
+  "ModuleFile" : "C:/Users/Petr/Documents/FPGA/nano HDMI vzor/src/HDMI.v",
   "ModuleLine" : 4,
   "ModuleName" : "HDMI_test",
   "SubInsts" : [
    {
-    "InstFile" : "C:/Users/Petr/Documents/FPGA/NanoHDMI/src/HDMI.v",
-    "InstLine" : 123,
+    "InstFile" : "C:/Users/Petr/Documents/FPGA/nano HDMI vzor/src/HDMI.v",
+    "InstLine" : 13,
+    "InstName" : "s480p",
+    "ModuleFile" : "C:/Users/Petr/Documents/FPGA/nano HDMI vzor/src/simple480p.v",
+    "ModuleLine" : 1,
+    "ModuleName" : "simple480p"
+   },
+   {
+    "InstFile" : "C:/Users/Petr/Documents/FPGA/nano HDMI vzor/src/HDMI.v",
+    "InstLine" : 37,
+    "InstName" : "animation",
+    "ModuleFile" : "C:/Users/Petr/Documents/FPGA/nano HDMI vzor/src/pattern.v",
+    "ModuleLine" : 1,
+    "ModuleName" : "pattern"
+   },
+   {
+    "InstFile" : "C:/Users/Petr/Documents/FPGA/nano HDMI vzor/src/HDMI.v",
+    "InstLine" : 112,
     "InstName" : "encode_R",
-    "ModuleFile" : "C:/Users/Petr/Documents/FPGA/NanoHDMI/src/tmds_encoder.v",
+    "ModuleFile" : "C:/Users/Petr/Documents/FPGA/nano HDMI vzor/src/tmds_encoder.v",
     "ModuleLine" : 1,
     "ModuleName" : "TMDS_encoder"
    },
    {
-    "InstFile" : "C:/Users/Petr/Documents/FPGA/NanoHDMI/src/HDMI.v",
-    "InstLine" : 124,
+    "InstFile" : "C:/Users/Petr/Documents/FPGA/nano HDMI vzor/src/HDMI.v",
+    "InstLine" : 113,
     "InstName" : "encode_G",
-    "ModuleFile" : "C:/Users/Petr/Documents/FPGA/NanoHDMI/src/tmds_encoder.v",
+    "ModuleFile" : "C:/Users/Petr/Documents/FPGA/nano HDMI vzor/src/tmds_encoder.v",
     "ModuleLine" : 1,
     "ModuleName" : "TMDS_encoder"
    },
    {
-    "InstFile" : "C:/Users/Petr/Documents/FPGA/NanoHDMI/src/HDMI.v",
-    "InstLine" : 125,
+    "InstFile" : "C:/Users/Petr/Documents/FPGA/nano HDMI vzor/src/HDMI.v",
+    "InstLine" : 114,
     "InstName" : "encode_B",
-    "ModuleFile" : "C:/Users/Petr/Documents/FPGA/NanoHDMI/src/tmds_encoder.v",
+    "ModuleFile" : "C:/Users/Petr/Documents/FPGA/nano HDMI vzor/src/tmds_encoder.v",
     "ModuleLine" : 1,
     "ModuleName" : "TMDS_encoder"
    },
    {
-    "InstFile" : "C:/Users/Petr/Documents/FPGA/NanoHDMI/src/HDMI.v",
-    "InstLine" : 133,
+    "InstFile" : "C:/Users/Petr/Documents/FPGA/nano HDMI vzor/src/HDMI.v",
+    "InstLine" : 122,
     "InstName" : "rPLL",
-    "ModuleFile" : "C:/Users/Petr/Documents/FPGA/NanoHDMI/src/gowin_rpll/gowin_rpll.v",
+    "ModuleFile" : "C:/Users/Petr/Documents/FPGA/nano HDMI vzor/src/gowin_rpll/gowin_rpll.v",
     "ModuleLine" : 10,
     "ModuleName" : "Gowin_rPLL"
    }

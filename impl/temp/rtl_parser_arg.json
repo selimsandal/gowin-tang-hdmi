@@ -2,15 +2,23 @@
  "Device" : "GW2AR-18C",
  "Files" : [
   {
-   "Path" : "C:/Users/Petr/Documents/FPGA/NanoHDMI/src/HDMI.v",
+   "Path" : "C:/Users/Petr/Documents/FPGA/nano HDMI vzor/src/HDMI.v",
    "Type" : "verilog"
   },
   {
-   "Path" : "C:/Users/Petr/Documents/FPGA/NanoHDMI/src/gowin_rpll/gowin_rpll.v",
+   "Path" : "C:/Users/Petr/Documents/FPGA/nano HDMI vzor/src/gowin_rpll/gowin_rpll.v",
    "Type" : "verilog"
   },
   {
-   "Path" : "C:/Users/Petr/Documents/FPGA/NanoHDMI/src/tmds_encoder.v",
+   "Path" : "C:/Users/Petr/Documents/FPGA/nano HDMI vzor/src/pattern.v",
+   "Type" : "verilog"
+  },
+  {
+   "Path" : "C:/Users/Petr/Documents/FPGA/nano HDMI vzor/src/simple480p.v",
+   "Type" : "verilog"
+  },
+  {
+   "Path" : "C:/Users/Petr/Documents/FPGA/nano HDMI vzor/src/tmds_encoder.v",
    "Type" : "verilog"
   }
  ],
@@ -18,8 +26,8 @@
 
  ],
  "LoopLimit" : 2000,
- "ResultFile" : "C:/Users/Petr/Documents/FPGA/NanoHDMI/impl/temp/rtl_parser.result",
- "Top" : "",
+ "ResultFile" : "C:/Users/Petr/Documents/FPGA/nano HDMI vzor/impl/temp/rtl_parser.result",
+ "Top" : "HDMI_test",
  "VerilogStd" : "verilog_2001",
  "VhdlStd" : "vhdl_93"
 }

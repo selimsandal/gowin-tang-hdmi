@@ -1,8 +1,9 @@
--d C:\Users\Petr\Documents\FPGA\NanoHDMI\impl\gwsynthesis\hdmi123.vg
+-d C:\Users\Petr\Documents\FPGA\nano HDMI vzor\impl\gwsynthesis\hdmi123.vg
 -p GW2AR-18C-QFN88PF-9
 -pn GW2AR-LV18QN88PFC9/I8
--cst C:\Users\Petr\Documents\FPGA\NanoHDMI\src\hdmi123.cst
--cfg C:\Users\Petr\Documents\FPGA\NanoHDMI\impl\pnr\device.cfg
+-cst C:\Users\Petr\Documents\FPGA\nano HDMI vzor\src\hdmi123.cst
+-cfg C:\Users\Petr\Documents\FPGA\nano HDMI vzor\impl\pnr\device.cfg
+-gao_crc 1001010100000101
 -bit
 -tr
 -ph
@@ -10,3 +11,4 @@
 -cst_error
 -correct_hold 1
 -route_maxfan 23
+-rtl_gao
