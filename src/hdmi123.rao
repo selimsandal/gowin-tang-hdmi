@@ -2,7 +2,7 @@
 <GAO_CONFIG>
     <Version>3.0</Version>
     <Mode>Lite</Mode>
-    <AoCore_Lite index="0" sample_clock="clk" trig_type="0" capture_amount="4096" implemention="0" input_register_enabled="0" capture_init_data_enabled="0" module_name="HDMI_test">
+    <AoCore_Lite index="0" sample_clock="clk" trig_type="0" capture_amount="8192" implemention="0" input_register_enabled="0" capture_init_data_enabled="0" module_name="HDMI_test">
         <SignalList>
             <Bus capture_enable="true" name="red[7:0]">
                 <Signal>red[7]</Signal>
@@ -34,9 +34,34 @@
                 <Signal>blue[1]</Signal>
                 <Signal>blue[0]</Signal>
             </Bus>
-            <Signal capture_enable="true">hSync</Signal>
-            <Signal capture_enable="true">vSync</Signal>
+            <Bus capture_enable="true" name="sx[9:0]">
+                <Signal>sx[9]</Signal>
+                <Signal>sx[8]</Signal>
+                <Signal>sx[7]</Signal>
+                <Signal>sx[6]</Signal>
+                <Signal>sx[5]</Signal>
+                <Signal>sx[4]</Signal>
+                <Signal>sx[3]</Signal>
+                <Signal>sx[2]</Signal>
+                <Signal>sx[1]</Signal>
+                <Signal>sx[0]</Signal>
+            </Bus>
+            <Bus capture_enable="true" name="sy[9:0]">
+                <Signal>sy[9]</Signal>
+                <Signal>sy[8]</Signal>
+                <Signal>sy[7]</Signal>
+                <Signal>sy[6]</Signal>
+                <Signal>sy[5]</Signal>
+                <Signal>sy[4]</Signal>
+                <Signal>sy[3]</Signal>
+                <Signal>sy[2]</Signal>
+                <Signal>sy[1]</Signal>
+                <Signal>sy[0]</Signal>
+            </Bus>
+            <Signal capture_enable="true">hsync</Signal>
+            <Signal capture_enable="true">vsync</Signal>
+            <Signal capture_enable="true">de</Signal>
         </SignalList>
     </AoCore_Lite>
-    <GAO_ID>0010110010110010</GAO_ID>
+    <GAO_ID>1001010100000101</GAO_ID>
 </GAO_CONFIG>
