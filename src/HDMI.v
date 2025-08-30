@@ -3,6 +3,8 @@
 ////////////////////////////////////////////////////////////////////////
 module HDMI_test(
 	input clk,  // 25MHz
+	input buttonUser,   // User button for shader selection
+	input buttonReset,  // Reset button
 	output [2:0] TMDSp, TMDSn,
 	output TMDSp_clock, TMDSn_clock
 );
@@ -11,11 +13,13 @@ wire [9:0] sx, sy;
 wire hsync, vsync, de;
 wire [7:0] red, green, blue;
 
-// Shader selection from demo controller
+// Shader selection from button-controlled demo
 wire [3:0] shader_select;
+wire rst_n = !buttonReset; // Invert button signal for proper reset behavior
 shader_demo demo_ctrl (
     .clk(clk),
-    .rst_n(1'b1),
+    .rst_n(rst_n),
+    .button_next(buttonUser),
     .shader_select(shader_select)
 );
 simple480p s480p(
@@ -50,7 +54,7 @@ wire [15:0] vp_scalar;
 
 vector_processor vpu (
     .clk(clk),
-    .rst_n(1'b1),
+    .rst_n(rst_n),
     .start(vp_start),
     .operation(vp_operation),
     .busy(vp_busy),
@@ -66,7 +70,7 @@ vector_processor vpu (
 wire shader_color_valid;
 shader_pipeline shader_pipe (
     .clk(clk),
-    .rst_n(1'b1),
+    .rst_n(rst_n),
     .pixel_x(sx),
     .pixel_y(sy),
     .pixel_valid(de),

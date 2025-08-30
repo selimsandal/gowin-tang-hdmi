@@ -43,6 +43,7 @@ localparam SHADER_RADIAL     = 4'h2;    // Radial pattern
 localparam SHADER_CHECKER    = 4'h3;    // Checkerboard
 localparam SHADER_SINE_WAVE  = 4'h4;    // Sine wave pattern
 localparam SHADER_SPIRAL     = 4'h5;    // Spiral pattern
+localparam SHADER_TRIANGLE   = 4'h6;    // Rotating triangle
 
 // Pipeline states
 localparam IDLE = 3'h0;
@@ -70,6 +71,11 @@ localparam SCREEN_HEIGHT = 480;
 // Temporary vectors for computation
 reg [VECTOR_WIDTH*DATA_WIDTH-1:0] temp_vec;
 reg [DATA_WIDTH-1:0] temp_scalar;
+
+// Triangle computation using vector processor
+// Triangle vertices (fixed): Top(0.5,0.7), BottomLeft(0.2,0.3), BottomRight(0.8,0.3)
+reg triangle_inside;
+reg [DATA_WIDTH-1:0] triangle_test_result;
 
 always @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
@@ -194,6 +200,15 @@ always @(posedge clk or negedge rst_n) begin
                         vp_scalar <= FP_ONE;
                     end
                     
+                    SHADER_TRIANGLE: begin
+                        // Triangle shader using vector operations for edge testing
+                        // Use vector subtraction to compute edge vectors
+                        vp_start <= 1'b1;
+                        vp_operation <= 4'h1; // OP_SUB
+                        vp_vec_a <= {norm_x, norm_y, 16'h0000, 16'h0000}; // Current pixel position
+                        vp_vec_b <= {16'h0080, 16'h00B3, 16'h0000, 16'h0000}; // Triangle top vertex (0.5, 0.7)
+                    end
+                    
                     default: begin
                         // Default: solid color
                         vp_start <= 1'b1;
@@ -206,7 +221,22 @@ always @(posedge clk or negedge rst_n) begin
             
             OUTPUT_COLOR: begin
                 // Convert fixed-point result to 8-bit RGB
-                if (shader_select == SHADER_RADIAL) begin
+                if (shader_select == SHADER_TRIANGLE) begin
+                    // For triangle, use vector distance computation for simple triangle test
+                    // Simple triangle test: if distance to center is small and y > 0.4, it's inside
+                    triangle_test_result = vp_result[63:48]; // Distance result from vector subtraction
+                    triangle_inside = (triangle_test_result < 16'h0060) && (norm_y > 16'h0066); // Simple approximation
+                    
+                    if (triangle_inside) begin
+                        red_out   <= 8'h80 + norm_x[7:1];     // Red varies with x
+                        green_out <= 8'h80 + norm_y[7:1];     // Green varies with y  
+                        blue_out  <= 8'hFF;                   // Blue constant
+                    end else begin
+                        red_out   <= 8'h20;                   // Dark background
+                        green_out <= 8'h20; 
+                        blue_out  <= 8'h40;
+                    end
+                end else if (shader_select == SHADER_RADIAL) begin
                     // For radial, use distance as brightness
                     temp_scalar = vp_result[63:48]; // Length result
                     red_out <= temp_scalar[15:8];
