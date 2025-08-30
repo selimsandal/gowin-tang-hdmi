@@ -78,8 +78,8 @@ reg [15:0] distance_to_center;
 reg [15:0] triangle_radius;
 reg signed [15:0] dx, dy;
 reg [15:0] center_x_px, center_y_px;
-reg [7:0] angle_approx;
-reg [15:0] angle_distance;
+reg signed [15:0] v0x, v0y, v1x, v1y, v2x, v2y;
+reg signed [31:0] edge1, edge2, edge3;
 
 // Animation parameters
 reg [7:0] rotation_phase;
@@ -90,7 +90,7 @@ always @(posedge clk or negedge rst_n) begin
         rotation_phase <= 8'h0;
     end else begin
         frame_counter <= frame_counter + 1;
-        rotation_phase <= frame_counter[23:16]; // Very slow animation
+        rotation_phase <= frame_counter[23:18]; // Much slower animation - ~26 seconds per rotation
     end
 end
 
@@ -107,38 +107,43 @@ always @(*) begin
     // Simple Manhattan distance (faster than Euclidean)
     distance_to_center = (dx >= 0 ? dx : -dx) + (dy >= 0 ? dy : -dy);
     
-    // Create animated triangle radius (20-40 pixels)
-    triangle_radius = 25 + {11'b0, rotation_phase[4:2]}; // 25-32 pixels
+    // Create animated triangle radius (larger size)
+    triangle_radius = 50 + {10'b0, rotation_phase[4:0]}; // 50-82 pixels
     
-    // Triangle shape based on angle and distance
-    // Create 3-sided shape using modulo arithmetic
+    // Proper triangle using 3 edge tests
+    // Define 3 triangle vertices in pixel space, rotating around center
     
-    // Approximate angle using dx/dy ratio (simplified)
-    if (dx == 0 && dy == 0) begin
-        angle_approx = 8'h00;
-    end else if (dy >= 0 && dx >= 0) begin
-        angle_approx = (dx > dy) ? 8'h00 : 8'h40; // 0° or 90° quadrant
-    end else if (dy >= 0 && dx < 0) begin
-        angle_approx = ((-dx) > dy) ? 8'h80 : 8'h40; // 90° or 180° quadrant  
-    end else if (dy < 0 && dx < 0) begin
-        angle_approx = ((-dx) > (-dy)) ? 8'h80 : 8'hC0; // 180° or 270° quadrant
-    end else begin
-        angle_approx = (dx > (-dy)) ? 8'h00 : 8'hC0; // 270° or 0° quadrant
-    end
-    
-    // Add rotation offset
-    angle_approx = angle_approx + rotation_phase;
-    
-    // Triangle sectors: smaller radius every 120 degrees (85 units in 256-space)
-    case (angle_approx[7:6])
-        2'b00: angle_distance = triangle_radius;      // 0-90°
-        2'b01: angle_distance = triangle_radius >> 1; // 90-180° (triangle edge)
-        2'b10: angle_distance = triangle_radius;      // 180-270°
-        2'b11: angle_distance = triangle_radius >> 1; // 270-360° (triangle edge)
+    // Calculate rotated triangle vertices (fixed 60 pixel radius)
+    case (rotation_phase[5:4]) // 4 rotation states, changes more frequently
+        2'b00: begin // 0 degrees
+            v0x = $signed(center_x_px);           v0y = $signed(center_y_px) - 60; // Top
+            v1x = $signed(center_x_px) - 52;      v1y = $signed(center_y_px) + 30; // Bottom left  
+            v2x = $signed(center_x_px) + 52;      v2y = $signed(center_y_px) + 30; // Bottom right
+        end
+        2'b01: begin // 90 degrees  
+            v0x = $signed(center_x_px) + 60;      v0y = $signed(center_y_px);      // Right
+            v1x = $signed(center_x_px) - 30;      v1y = $signed(center_y_px) - 52; // Top left
+            v2x = $signed(center_x_px) - 30;      v2y = $signed(center_y_px) + 52; // Bottom left
+        end
+        2'b10: begin // 180 degrees
+            v0x = $signed(center_x_px);           v0y = $signed(center_y_px) + 60; // Bottom
+            v1x = $signed(center_x_px) + 52;      v1y = $signed(center_y_px) - 30; // Top right
+            v2x = $signed(center_x_px) - 52;      v2y = $signed(center_y_px) - 30; // Top left  
+        end
+        2'b11: begin // 270 degrees
+            v0x = $signed(center_x_px) - 60;      v0y = $signed(center_y_px);      // Left
+            v1x = $signed(center_x_px) + 30;      v1y = $signed(center_y_px) + 52; // Bottom right
+            v2x = $signed(center_x_px) + 30;      v2y = $signed(center_y_px) - 52; // Top right
+        end
     endcase
     
-    // Point is inside triangle if distance is less than angle-adjusted radius
-    triangle_inside = (distance_to_center < angle_distance);
+    // Edge function tests (cross product for each edge)
+    edge1 = (v1x - v0x) * ($signed({1'b0, pixel_y}) - v0y) - (v1y - v0y) * ($signed({1'b0, pixel_x}) - v0x);
+    edge2 = (v2x - v1x) * ($signed({1'b0, pixel_y}) - v1y) - (v2y - v1y) * ($signed({1'b0, pixel_x}) - v1x);  
+    edge3 = (v0x - v2x) * ($signed({1'b0, pixel_y}) - v2y) - (v0y - v2y) * ($signed({1'b0, pixel_x}) - v2x);
+    
+    // Point is inside triangle if all edges have same sign
+    triangle_inside = (edge1 >= 0 && edge2 >= 0 && edge3 >= 0) || (edge1 <= 0 && edge2 <= 0 && edge3 <= 0);
 end
 
 // Coordinate normalization with proper bounds checking
