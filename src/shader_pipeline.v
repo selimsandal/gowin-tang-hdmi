@@ -73,21 +73,20 @@ reg [VECTOR_WIDTH*DATA_WIDTH-1:0] temp_vec;
 reg [DATA_WIDTH-1:0] temp_scalar;
 
 // Triangle computation with rotation
-// Base triangle vertices relative to center: Top(0,0.15), BottomLeft(-0.15,-0.1), BottomRight(0.15,-0.1)  
 reg triangle_inside;
-reg signed [DATA_WIDTH-1:0] edge1_test, edge2_test, edge3_test;
+reg signed [31:0] edge1_test, edge2_test, edge3_test; // Use wider precision for edge tests
 
-// Rotation parameters
+// Rotation parameters  
 reg signed [DATA_WIDTH-1:0] cos_theta, sin_theta;
-reg signed [DATA_WIDTH-1:0] v0_x, v0_y, v1_x, v1_y, v2_x, v2_y; // Rotated vertices
+reg signed [DATA_WIDTH-1:0] v0_x, v0_y, v1_x, v1_y, v2_x, v2_y; // Rotated vertices in normalized coordinates
 
-// Base triangle vertices (centered at origin)
-localparam signed [DATA_WIDTH-1:0] BASE_V0_X = 16'h0000;  // Top vertex (0, 0.15)
-localparam signed [DATA_WIDTH-1:0] BASE_V0_Y = 16'h0026;  
-localparam signed [DATA_WIDTH-1:0] BASE_V1_X = -16'h0026; // Bottom left (-0.15, -0.1)
-localparam signed [DATA_WIDTH-1:0] BASE_V1_Y = -16'h001A; 
-localparam signed [DATA_WIDTH-1:0] BASE_V2_X = 16'h0026;  // Bottom right (0.15, -0.1)
-localparam signed [DATA_WIDTH-1:0] BASE_V2_Y = -16'h001A;
+// Base triangle vertices (centered at origin, larger and more visible)
+localparam signed [DATA_WIDTH-1:0] BASE_V0_X = 16'h0000;  // Top vertex (0, 0.25)
+localparam signed [DATA_WIDTH-1:0] BASE_V0_Y = 16'h0040;  // 0.25 in 8.8 fixed point
+localparam signed [DATA_WIDTH-1:0] BASE_V1_X = -16'h0040; // Bottom left (-0.25, -0.2)
+localparam signed [DATA_WIDTH-1:0] BASE_V1_Y = -16'h0033; // -0.2 in 8.8 fixed point
+localparam signed [DATA_WIDTH-1:0] BASE_V2_X = 16'h0040;  // Bottom right (0.25, -0.2)
+localparam signed [DATA_WIDTH-1:0] BASE_V2_Y = -16'h0033;
 
 always @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
@@ -95,38 +94,63 @@ always @(posedge clk or negedge rst_n) begin
         time_var <= 16'h0;
     end else begin
         frame_counter <= frame_counter + 1;
-        time_var <= frame_counter[23:16]; // Slower rotation - change every ~1.3 seconds at 25MHz
+        time_var <= frame_counter[23:16]; // Much slower rotation - ~2.6 seconds per full rotation at 25MHz
     end
 end
 
-// Simple trigonometric lookup for rotation (8 positions)
+// Enhanced trigonometric lookup for smoother rotation (32 positions)
 always @(*) begin
-    case (time_var[7:5]) // Use upper bits for 8 discrete rotation positions
-        3'h0: begin cos_theta = 16'h0100; sin_theta = 16'h0000; end    // 0 degrees  
-        3'h1: begin cos_theta = 16'h00B5; sin_theta = 16'h00B5; end    // 45 degrees
-        3'h2: begin cos_theta = 16'h0000; sin_theta = 16'h0100; end    // 90 degrees
-        3'h3: begin cos_theta = -16'h00B5; sin_theta = 16'h00B5; end   // 135 degrees
-        3'h4: begin cos_theta = -16'h0100; sin_theta = 16'h0000; end   // 180 degrees
-        3'h5: begin cos_theta = -16'h00B5; sin_theta = -16'h00B5; end  // 225 degrees
-        3'h6: begin cos_theta = 16'h0000; sin_theta = -16'h0100; end   // 270 degrees
-        3'h7: begin cos_theta = 16'h00B5; sin_theta = -16'h00B5; end   // 315 degrees
+    case (time_var[7:3]) // Use 5 bits for 32 discrete rotation positions
+        5'h00: begin cos_theta = 16'h0100; sin_theta = 16'h0000; end    // 0°
+        5'h01: begin cos_theta = 16'h00FB; sin_theta = 16'h0019; end    // 11.25°
+        5'h02: begin cos_theta = 16'h00EC; sin_theta = 16'h0031; end    // 22.5°
+        5'h03: begin cos_theta = 16'h00D4; sin_theta = 16'h0047; end    // 33.75°
+        5'h04: begin cos_theta = 16'h00B5; sin_theta = 16'h00B5; end    // 45°
+        5'h05: begin cos_theta = 16'h0047; sin_theta = 16'h00D4; end    // 56.25°
+        5'h06: begin cos_theta = 16'h0031; sin_theta = 16'h00EC; end    // 67.5°
+        5'h07: begin cos_theta = 16'h0019; sin_theta = 16'h00FB; end    // 78.75°
+        5'h08: begin cos_theta = 16'h0000; sin_theta = 16'h0100; end    // 90°
+        5'h09: begin cos_theta = -16'h0019; sin_theta = 16'h00FB; end   // 101.25°
+        5'h0A: begin cos_theta = -16'h0031; sin_theta = 16'h00EC; end   // 112.5°
+        5'h0B: begin cos_theta = -16'h0047; sin_theta = 16'h00D4; end   // 123.75°
+        5'h0C: begin cos_theta = -16'h00B5; sin_theta = 16'h00B5; end   // 135°
+        5'h0D: begin cos_theta = -16'h00D4; sin_theta = 16'h0047; end   // 146.25°
+        5'h0E: begin cos_theta = -16'h00EC; sin_theta = 16'h0031; end   // 157.5°
+        5'h0F: begin cos_theta = -16'h00FB; sin_theta = 16'h0019; end   // 168.75°
+        5'h10: begin cos_theta = -16'h0100; sin_theta = 16'h0000; end   // 180°
+        5'h11: begin cos_theta = -16'h00FB; sin_theta = -16'h0019; end  // 191.25°
+        5'h12: begin cos_theta = -16'h00EC; sin_theta = -16'h0031; end  // 202.5°
+        5'h13: begin cos_theta = -16'h00D4; sin_theta = -16'h0047; end  // 213.75°
+        5'h14: begin cos_theta = -16'h00B5; sin_theta = -16'h00B5; end  // 225°
+        5'h15: begin cos_theta = -16'h0047; sin_theta = -16'h00D4; end  // 236.25°
+        5'h16: begin cos_theta = -16'h0031; sin_theta = -16'h00EC; end  // 247.5°
+        5'h17: begin cos_theta = -16'h0019; sin_theta = -16'h00FB; end  // 258.75°
+        5'h18: begin cos_theta = 16'h0000; sin_theta = -16'h0100; end   // 270°
+        5'h19: begin cos_theta = 16'h0019; sin_theta = -16'h00FB; end   // 281.25°
+        5'h1A: begin cos_theta = 16'h0031; sin_theta = -16'h00EC; end   // 292.5°
+        5'h1B: begin cos_theta = 16'h0047; sin_theta = -16'h00D4; end   // 303.75°
+        5'h1C: begin cos_theta = 16'h00B5; sin_theta = -16'h00B5; end   // 315°
+        5'h1D: begin cos_theta = 16'h00D4; sin_theta = -16'h0047; end   // 326.25°
+        5'h1E: begin cos_theta = 16'h00EC; sin_theta = -16'h0031; end   // 337.5°
+        5'h1F: begin cos_theta = 16'h00FB; sin_theta = -16'h0019; end   // 348.75°
     endcase
 end
 
 // Rotate triangle vertices: [x'] = [cos -sin] [x]
 //                           [y']   [sin  cos] [y]
+// All vertices are transformed to normalized screen coordinates [0,1]
 always @(*) begin
-    // Vertex 0 rotation
-    v0_x = ((BASE_V0_X * cos_theta) >>> 8) - ((BASE_V0_Y * sin_theta) >>> 8) + 16'h0080; // +0.5 for screen center
-    v0_y = ((BASE_V0_X * sin_theta) >>> 8) + ((BASE_V0_Y * cos_theta) >>> 8) + 16'h0080; // +0.5 for screen center
+    // Vertex 0 rotation (use signed arithmetic, then shift to [0,1] range)
+    v0_x = (((BASE_V0_X * cos_theta) - (BASE_V0_Y * sin_theta)) >>> 8) + FP_HALF;
+    v0_y = (((BASE_V0_X * sin_theta) + (BASE_V0_Y * cos_theta)) >>> 8) + FP_HALF;
     
     // Vertex 1 rotation  
-    v1_x = ((BASE_V1_X * cos_theta) >>> 8) - ((BASE_V1_Y * sin_theta) >>> 8) + 16'h0080;
-    v1_y = ((BASE_V1_X * sin_theta) >>> 8) + ((BASE_V1_Y * cos_theta) >>> 8) + 16'h0080;
+    v1_x = (((BASE_V1_X * cos_theta) - (BASE_V1_Y * sin_theta)) >>> 8) + FP_HALF;
+    v1_y = (((BASE_V1_X * sin_theta) + (BASE_V1_Y * cos_theta)) >>> 8) + FP_HALF;
     
     // Vertex 2 rotation
-    v2_x = ((BASE_V2_X * cos_theta) >>> 8) - ((BASE_V2_Y * sin_theta) >>> 8) + 16'h0080;
-    v2_y = ((BASE_V2_X * sin_theta) >>> 8) + ((BASE_V2_Y * cos_theta) >>> 8) + 16'h0080;
+    v2_x = (((BASE_V2_X * cos_theta) - (BASE_V2_Y * sin_theta)) >>> 8) + FP_HALF;
+    v2_y = (((BASE_V2_X * sin_theta) + (BASE_V2_Y * cos_theta)) >>> 8) + FP_HALF;
 end
 
 // Coordinate normalization
@@ -161,7 +185,10 @@ always @(*) begin
         end
         
         EXECUTE_SHADER: begin
-            if (vp_start) begin
+            if (shader_select == SHADER_TRIANGLE) begin
+                // Triangle shader bypasses vector processor
+                next_state = OUTPUT_COLOR;
+            end else if (vp_start) begin
                 next_state = WAIT_RESULT;
             end
         end
@@ -241,12 +268,12 @@ always @(posedge clk or negedge rst_n) begin
                     end
                     
                     SHADER_TRIANGLE: begin
-                        // Triangle shader using vector operations
-                        // Compute distance from pixel to triangle centroid
-                        vp_start <= 1'b1;
-                        vp_operation <= 4'h1; // OP_SUB
-                        vp_vec_a <= {norm_x, norm_y, 16'h0000, 16'h0000}; // Current pixel position
-                        vp_vec_b <= {16'h0080, 16'h007A, 16'h0000, 16'h0000}; // Triangle centroid (0.5, 0.48)
+                        // Triangle shader - prepare for direct triangle testing
+                        // No vector processor needed, triangle test is done in OUTPUT_COLOR
+                        vp_start <= 1'b0;
+                        vp_operation <= 4'h0;
+                        vp_vec_a <= 64'h0;
+                        vp_vec_b <= 64'h0;
                     end
                     
                     default: begin
@@ -262,29 +289,33 @@ always @(posedge clk or negedge rst_n) begin
             OUTPUT_COLOR: begin
                 // Convert fixed-point result to 8-bit RGB
                 if (shader_select == SHADER_TRIANGLE) begin
-                    // Rotating triangle using simplified edge testing
-                    // Compute signed area using cross product for each edge
+                    // Rotating triangle using corrected edge testing
+                    // All coordinates are now in the same [0,1] normalized space
                     
-                    // Edge test 1: v0 to v1 (cross product gives signed area)
-                    edge1_test = (v1_x - v0_x) * (norm_y - v0_y) - (v1_y - v0_y) * (norm_x - v0_x);
+                    // Edge test using cross product with wider precision
+                    // Edge 1: (v1 - v0) x (p - v0) 
+                    edge1_test = ((v1_x - v0_x) * (norm_y - v0_y)) - ((v1_y - v0_y) * (norm_x - v0_x));
                     
-                    // Edge test 2: v1 to v2  
-                    edge2_test = (v2_x - v1_x) * (norm_y - v1_y) - (v2_y - v1_y) * (norm_x - v1_x);
+                    // Edge 2: (v2 - v1) x (p - v1)
+                    edge2_test = ((v2_x - v1_x) * (norm_y - v1_y)) - ((v2_y - v1_y) * (norm_x - v1_x));
                     
-                    // Edge test 3: v2 to v0
-                    edge3_test = (v0_x - v2_x) * (norm_y - v2_y) - (v0_y - v2_y) * (norm_x - v2_x);
+                    // Edge 3: (v0 - v2) x (p - v2) 
+                    edge3_test = ((v0_x - v2_x) * (norm_y - v2_y)) - ((v0_y - v2_y) * (norm_x - v2_x));
                     
                     // Point is inside if all cross products have same sign
-                    triangle_inside = (edge1_test >= 0) && (edge2_test >= 0) && (edge3_test >= 0);
+                    // For counter-clockwise triangle, all should be >= 0
+                    triangle_inside = (edge1_test >= 32'sd0) && (edge2_test >= 32'sd0) && (edge3_test >= 32'sd0);
                     
                     if (triangle_inside) begin
-                        red_out   <= 8'hFF;                                // Bright red
-                        green_out <= 8'h80 + time_var[6:0];                // Animated green  
-                        blue_out  <= 8'h80 + time_var[7:1];                // Animated blue
+                        // Smooth color animation based on rotation
+                        red_out   <= 8'h80 + {1'b0, time_var[6:0]};        // Animated red
+                        green_out <= 8'hC0 + {2'b0, time_var[5:0]};        // Bright animated green  
+                        blue_out  <= 8'h40 + {2'b0, time_var[5:0]};        // Animated blue
                     end else begin
-                        red_out   <= 8'h05;                                // Very dark background
-                        green_out <= 8'h05; 
-                        blue_out  <= 8'h15;
+                        // Dark blue background
+                        red_out   <= 8'h08;                                
+                        green_out <= 8'h10; 
+                        blue_out  <= 8'h30;
                     end
                 end else if (shader_select == SHADER_RADIAL) begin
                     // For radial, use distance as brightness
