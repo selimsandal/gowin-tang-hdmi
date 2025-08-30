@@ -59,7 +59,7 @@ reg [DATA_WIDTH-1:0] norm_x, norm_y;
 reg [DATA_WIDTH-1:0] center_x, center_y;
 
 // Animation counter for time-based effects
-reg [15:0] frame_counter;
+reg [23:0] frame_counter;
 reg [DATA_WIDTH-1:0] time_var;
 
 // Fixed-point constants
@@ -72,21 +72,61 @@ localparam SCREEN_HEIGHT = 480;
 reg [VECTOR_WIDTH*DATA_WIDTH-1:0] temp_vec;
 reg [DATA_WIDTH-1:0] temp_scalar;
 
-// Triangle computation using vector processor
-// Triangle vertices (fixed): Top(0.5,0.7), BottomLeft(0.3,0.3), BottomRight(0.7,0.3)
+// Triangle computation with rotation
+// Base triangle vertices relative to center: Top(0,0.15), BottomLeft(-0.15,-0.1), BottomRight(0.15,-0.1)  
 reg triangle_inside;
 reg signed [DATA_WIDTH-1:0] edge1_test, edge2_test, edge3_test;
 
+// Rotation parameters
+reg signed [DATA_WIDTH-1:0] cos_theta, sin_theta;
+reg signed [DATA_WIDTH-1:0] v0_x, v0_y, v1_x, v1_y, v2_x, v2_y; // Rotated vertices
+
+// Base triangle vertices (centered at origin)
+localparam signed [DATA_WIDTH-1:0] BASE_V0_X = 16'h0000;  // Top vertex (0, 0.15)
+localparam signed [DATA_WIDTH-1:0] BASE_V0_Y = 16'h0026;  
+localparam signed [DATA_WIDTH-1:0] BASE_V1_X = -16'h0026; // Bottom left (-0.15, -0.1)
+localparam signed [DATA_WIDTH-1:0] BASE_V1_Y = -16'h001A; 
+localparam signed [DATA_WIDTH-1:0] BASE_V2_X = 16'h0026;  // Bottom right (0.15, -0.1)
+localparam signed [DATA_WIDTH-1:0] BASE_V2_Y = -16'h001A;
+
 always @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
-        frame_counter <= 16'h0;
+        frame_counter <= 24'h0;
         time_var <= 16'h0;
     end else begin
-        if (pixel_x == 0 && pixel_y == 0 && pixel_valid) begin
-            frame_counter <= frame_counter + 1;
-            time_var <= frame_counter[15:8]; // Slow time progression
-        end
+        frame_counter <= frame_counter + 1;
+        time_var <= frame_counter[22:15]; // Slower rotation - change every ~1.3 seconds at 25MHz
     end
+end
+
+// Simple trigonometric lookup for rotation (8 positions)
+always @(*) begin
+    case (time_var[7:5]) // Use upper bits for 8 discrete rotation positions
+        3'h0: begin cos_theta = 16'h0100; sin_theta = 16'h0000; end    // 0 degrees  
+        3'h1: begin cos_theta = 16'h00B5; sin_theta = 16'h00B5; end    // 45 degrees
+        3'h2: begin cos_theta = 16'h0000; sin_theta = 16'h0100; end    // 90 degrees
+        3'h3: begin cos_theta = -16'h00B5; sin_theta = 16'h00B5; end   // 135 degrees
+        3'h4: begin cos_theta = -16'h0100; sin_theta = 16'h0000; end   // 180 degrees
+        3'h5: begin cos_theta = -16'h00B5; sin_theta = -16'h00B5; end  // 225 degrees
+        3'h6: begin cos_theta = 16'h0000; sin_theta = -16'h0100; end   // 270 degrees
+        3'h7: begin cos_theta = 16'h00B5; sin_theta = -16'h00B5; end   // 315 degrees
+    endcase
+end
+
+// Rotate triangle vertices: [x'] = [cos -sin] [x]
+//                           [y']   [sin  cos] [y]
+always @(*) begin
+    // Vertex 0 rotation
+    v0_x = ((BASE_V0_X * cos_theta) >>> 8) - ((BASE_V0_Y * sin_theta) >>> 8) + 16'h0080; // +0.5 for screen center
+    v0_y = ((BASE_V0_X * sin_theta) >>> 8) + ((BASE_V0_Y * cos_theta) >>> 8) + 16'h0080; // +0.5 for screen center
+    
+    // Vertex 1 rotation  
+    v1_x = ((BASE_V1_X * cos_theta) >>> 8) - ((BASE_V1_Y * sin_theta) >>> 8) + 16'h0080;
+    v1_y = ((BASE_V1_X * sin_theta) >>> 8) + ((BASE_V1_Y * cos_theta) >>> 8) + 16'h0080;
+    
+    // Vertex 2 rotation
+    v2_x = ((BASE_V2_X * cos_theta) >>> 8) - ((BASE_V2_Y * sin_theta) >>> 8) + 16'h0080;
+    v2_y = ((BASE_V2_X * sin_theta) >>> 8) + ((BASE_V2_Y * cos_theta) >>> 8) + 16'h0080;
 end
 
 // Coordinate normalization
@@ -222,29 +262,29 @@ always @(posedge clk or negedge rst_n) begin
             OUTPUT_COLOR: begin
                 // Convert fixed-point result to 8-bit RGB
                 if (shader_select == SHADER_TRIANGLE) begin
-                    // Triangle using proper edge testing
-                    // Triangle vertices: Top(0.5,0.7), BottomLeft(0.3,0.3), BottomRight(0.7,0.3)
+                    // Rotating triangle using simplified edge testing
+                    // Compute signed area using cross product for each edge
                     
-                    // Compute edge tests for triangle
-                    // Left edge: 2*(x-0.3) - (y-0.3) >= 0  
-                    edge1_test = ((norm_x - 16'h004C) << 1) - (norm_y - 16'h004C);
+                    // Edge test 1: v0 to v1 (cross product gives signed area)
+                    edge1_test = (v1_x - v0_x) * (norm_y - v0_y) - (v1_y - v0_y) * (norm_x - v0_x);
                     
-                    // Right edge: -2*(x-0.7) - (y-0.3) >= 0  
-                    edge2_test = -((norm_x - 16'h00B3) << 1) - (norm_y - 16'h004C);
+                    // Edge test 2: v1 to v2  
+                    edge2_test = (v2_x - v1_x) * (norm_y - v1_y) - (v2_y - v1_y) * (norm_x - v1_x);
                     
-                    // Bottom edge: y >= 0.3
-                    edge3_test = norm_y - 16'h004C;
+                    // Edge test 3: v2 to v0
+                    edge3_test = (v0_x - v2_x) * (norm_y - v2_y) - (v0_y - v2_y) * (norm_x - v2_x);
                     
+                    // Point is inside if all cross products have same sign
                     triangle_inside = (edge1_test >= 0) && (edge2_test >= 0) && (edge3_test >= 0);
                     
                     if (triangle_inside) begin
-                        red_out   <= 8'hC0 + norm_x[7:2];     // Red varies with x
-                        green_out <= 8'hC0 + norm_y[7:2];     // Green varies with y  
-                        blue_out  <= 8'hFF;                   // Blue constant
+                        red_out   <= 8'hFF;                                // Bright red
+                        green_out <= 8'h80 + time_var[6:0];                // Animated green  
+                        blue_out  <= 8'h80 + time_var[7:1];                // Animated blue
                     end else begin
-                        red_out   <= 8'h10;                   // Dark background
-                        green_out <= 8'h10; 
-                        blue_out  <= 8'h30;
+                        red_out   <= 8'h05;                                // Very dark background
+                        green_out <= 8'h05; 
+                        blue_out  <= 8'h15;
                     end
                 end else if (shader_select == SHADER_RADIAL) begin
                     // For radial, use distance as brightness
