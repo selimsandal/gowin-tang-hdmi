@@ -72,62 +72,74 @@ localparam SCREEN_HEIGHT = 480;
 reg [VECTOR_WIDTH*DATA_WIDTH-1:0] temp_vec;
 reg [DATA_WIDTH-1:0] temp_scalar;
 
-// Triangle computation with rotation
+// Simple triangle using distance-based method
 reg triangle_inside;
-reg signed [31:0] d1, d2, d3; // Barycentric coordinate tests
-reg signed [15:0] px, py; // Current pixel coordinates
+reg [15:0] distance_to_center;
+reg [15:0] triangle_radius;
 
-// Rotation parameters  
-reg signed [DATA_WIDTH-1:0] cos_theta, sin_theta;
-reg signed [DATA_WIDTH-1:0] v0_x, v0_y, v1_x, v1_y, v2_x, v2_y; // Rotated vertices in normalized coordinates
-
-// Base triangle vertices (centered at origin, small size)
-localparam signed [DATA_WIDTH-1:0] BASE_V0_X = 16'h0000;  // Top vertex (0, 0.08) 
-localparam signed [DATA_WIDTH-1:0] BASE_V0_Y = 16'h0014;  // 0.08 in 8.8 fixed point
-localparam signed [DATA_WIDTH-1:0] BASE_V1_X = -16'h0014; // Bottom left (-0.08, -0.08)
-localparam signed [DATA_WIDTH-1:0] BASE_V1_Y = -16'h0014; // -0.08 in 8.8 fixed point  
-localparam signed [DATA_WIDTH-1:0] BASE_V2_X = 16'h0014;  // Bottom right (0.08, -0.08)
-localparam signed [DATA_WIDTH-1:0] BASE_V2_Y = -16'h0014;
+// Animation parameters
+reg [7:0] rotation_phase;
 
 always @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
         frame_counter <= 24'h0;
-        time_var <= 16'h0;
+        rotation_phase <= 8'h0;
     end else begin
         frame_counter <= frame_counter + 1;
-        time_var <= frame_counter[23:20]; // Much much slower - ~10+ seconds per rotation at 25MHz
+        rotation_phase <= frame_counter[23:16]; // Very slow animation
     end
 end
 
-// Simplified trigonometric lookup for debugging (8 positions)
+// Simple triangle calculation using distance from center
 always @(*) begin
-    case (time_var[3:1]) // Use 3 bits for 8 discrete rotation positions
-        3'h0: begin cos_theta = 16'h0100; sin_theta = 16'h0000; end    // 0°  
-        3'h1: begin cos_theta = 16'h00B5; sin_theta = 16'h00B5; end    // 45°
-        3'h2: begin cos_theta = 16'h0000; sin_theta = 16'h0100; end    // 90°
-        3'h3: begin cos_theta = -16'h00B5; sin_theta = 16'h00B5; end   // 135°
-        3'h4: begin cos_theta = -16'h0100; sin_theta = 16'h0000; end   // 180°
-        3'h5: begin cos_theta = -16'h00B5; sin_theta = -16'h00B5; end  // 225°
-        3'h6: begin cos_theta = 16'h0000; sin_theta = -16'h0100; end   // 270°
-        3'h7: begin cos_theta = 16'h00B5; sin_theta = -16'h00B5; end   // 315°
+    // Calculate distance from screen center (320, 240) to current pixel
+    reg signed [15:0] dx, dy;
+    reg [15:0] center_x_px, center_y_px;
+    
+    center_x_px = SCREEN_WIDTH >> 1;  // 320
+    center_y_px = SCREEN_HEIGHT >> 1; // 240
+    
+    // Distance calculation
+    dx = pixel_x - center_x_px;
+    dy = pixel_y - center_y_px;
+    
+    // Simple Manhattan distance (faster than Euclidean)
+    distance_to_center = (dx >= 0 ? dx : -dx) + (dy >= 0 ? dy : -dy);
+    
+    // Create animated triangle radius (20-40 pixels)
+    triangle_radius = 25 + (rotation_phase[4:0] >> 1); // 25-37 pixels
+    
+    // Triangle shape based on angle and distance
+    // Create 3-sided shape using modulo arithmetic
+    reg [7:0] angle_approx;
+    reg [15:0] angle_distance;
+    
+    // Approximate angle using dx/dy ratio (simplified)
+    if (dx == 0 && dy == 0) begin
+        angle_approx = 8'h00;
+    end else if (dy >= 0 && dx >= 0) begin
+        angle_approx = (dx > dy) ? 8'h00 : 8'h40; // 0° or 90° quadrant
+    end else if (dy >= 0 && dx < 0) begin
+        angle_approx = (-dx > dy) ? 8'h80 : 8'h40; // 90° or 180° quadrant  
+    end else if (dy < 0 && dx < 0) begin
+        angle_approx = (-dx > -dy) ? 8'h80 : 8'hC0; // 180° or 270° quadrant
+    end else begin
+        angle_approx = (dx > -dy) ? 8'h00 : 8'hC0; // 270° or 0° quadrant
+    end
+    
+    // Add rotation offset
+    angle_approx = angle_approx + rotation_phase;
+    
+    // Triangle sectors: smaller radius every 120 degrees (85 units in 256-space)
+    case (angle_approx[7:6])
+        2'b00: angle_distance = triangle_radius;      // 0-90°
+        2'b01: angle_distance = triangle_radius >> 1; // 90-180° (triangle edge)
+        2'b10: angle_distance = triangle_radius;      // 180-270°
+        2'b11: angle_distance = triangle_radius >> 1; // 270-360° (triangle edge)
     endcase
-end
-
-// Rotate triangle vertices and translate to screen center
-// Rotation matrix: [x'] = [cos -sin] [x] + [0.5]
-//                  [y']   [sin  cos] [y]   [0.5]
-always @(*) begin
-    // Vertex 0 rotation around origin, then translate to center (0.5, 0.5)
-    v0_x = ((BASE_V0_X * cos_theta - BASE_V0_Y * sin_theta) >>> 8) + FP_HALF;
-    v0_y = ((BASE_V0_X * sin_theta + BASE_V0_Y * cos_theta) >>> 8) + FP_HALF;
     
-    // Vertex 1 rotation around origin, then translate to center  
-    v1_x = ((BASE_V1_X * cos_theta - BASE_V1_Y * sin_theta) >>> 8) + FP_HALF;
-    v1_y = ((BASE_V1_X * sin_theta + BASE_V1_Y * cos_theta) >>> 8) + FP_HALF;
-    
-    // Vertex 2 rotation around origin, then translate to center
-    v2_x = ((BASE_V2_X * cos_theta - BASE_V2_Y * sin_theta) >>> 8) + FP_HALF;
-    v2_y = ((BASE_V2_X * sin_theta + BASE_V2_Y * cos_theta) >>> 8) + FP_HALF;
+    // Point is inside triangle if distance is less than angle-adjusted radius
+    triangle_inside = (distance_to_center < angle_distance);
 end
 
 // Coordinate normalization with proper bounds checking
@@ -285,37 +297,17 @@ always @(posedge clk or negedge rst_n) begin
             OUTPUT_COLOR: begin
                 // Convert fixed-point result to 8-bit RGB
                 if (shader_select == SHADER_TRIANGLE) begin
-                    // Simple triangle test with bounds checking
-                    if (pixel_x < SCREEN_WIDTH && pixel_y < SCREEN_HEIGHT) begin
-                        // Use barycentric coordinates for robust triangle testing
-                        px = norm_x;
-                        py = norm_y;
-                        
-                        // Barycentric coordinate calculation (simplified)
-                        d1 = ((px - v0_x) * (v1_y - v0_y)) - ((v1_x - v0_x) * (py - v0_y));
-                        d2 = ((px - v1_x) * (v2_y - v1_y)) - ((v2_x - v1_x) * (py - v1_y));  
-                        d3 = ((px - v2_x) * (v0_y - v2_y)) - ((v0_x - v2_x) * (py - v2_y));
-                        
-                        // Check if point is inside triangle (all same sign)
-                        triangle_inside = ((d1 >= 32'sd0) && (d2 >= 32'sd0) && (d3 >= 32'sd0)) ||
-                                         ((d1 <= 32'sd0) && (d2 <= 32'sd0) && (d3 <= 32'sd0));
-                        
-                        if (triangle_inside) begin
-                            // Solid bright triangle with subtle animation
-                            red_out   <= 8'hFF;                            // Bright red
-                            green_out <= 8'h80 + {2'b0, time_var[5:0]};    // Animated green  
-                            blue_out  <= 8'h20;                            // Dark blue
-                        end else begin
-                            // Dark background
-                            red_out   <= 8'h10;                                
-                            green_out <= 8'h10; 
-                            blue_out  <= 8'h20;
-                        end
+                    // Simple distance-based triangle
+                    if (triangle_inside) begin
+                        // Bright triangle with color animation
+                        red_out   <= 8'hFF;                                    // Bright red
+                        green_out <= 8'h40 + {2'b0, rotation_phase[5:0]};     // Animated green  
+                        blue_out  <= 8'h80;                                    // Blue
                     end else begin
-                        // Out of bounds - black
-                        red_out   <= 8'h00;
-                        green_out <= 8'h00;
-                        blue_out  <= 8'h00;
+                        // Dark background
+                        red_out   <= 8'h10;                                
+                        green_out <= 8'h15; 
+                        blue_out  <= 8'h20;
                     end
                 end else if (shader_select == SHADER_RADIAL) begin
                     // For radial, use distance as brightness
