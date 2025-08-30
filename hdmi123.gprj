@@ -7,9 +7,11 @@
     <FileList>
         <File path="src/HDMI.v" type="file.verilog" enable="1"/>
         <File path="src/gowin_rpll/gowin_rpll.v" type="file.verilog" enable="1"/>
-        <File path="src/pattern.v" type="file.verilog" enable="1"/>
+        <File path="src/shader_demo.v" type="file.verilog" enable="1"/>
+        <File path="src/shader_pipeline.v" type="file.verilog" enable="1"/>
         <File path="src/simple480p.v" type="file.verilog" enable="1"/>
         <File path="src/tmds_encoder.v" type="file.verilog" enable="1"/>
+        <File path="src/vector_processor.v" type="file.verilog" enable="1"/>
         <File path="src/hdmi123.cst" type="file.cst" enable="1"/>
         <File path="src/hdmi123.rao" type="file.gao" enable="1"/>
     </FileList>

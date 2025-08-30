@@ -10,6 +10,14 @@ module HDMI_test(
 wire [9:0] sx, sy;
 wire hsync, vsync, de;
 wire [7:0] red, green, blue;
+
+// Shader selection from demo controller
+wire [3:0] shader_select;
+shader_demo demo_ctrl (
+    .clk(clk),
+    .rst_n(1'b1),
+    .shader_select(shader_select)
+);
 simple480p s480p(
     .clk(clk),
     .sx(sx),
@@ -34,13 +42,48 @@ localparam	BLUE	= {8'd255 , 8'd0   , 8'd0   };
 localparam	BLACK	= {8'd0   , 8'd0   , 8'd0   };
 
 
-pattern animation (
+// Vector processor for shader operations
+wire vp_start, vp_busy, vp_done, vp_result_valid;
+wire [3:0] vp_operation;
+wire [63:0] vp_vec_a, vp_vec_b, vp_result;
+wire [15:0] vp_scalar;
+
+vector_processor vpu (
     .clk(clk),
-    .sx(sx),
-    .sy(sy),
-    .red(red),
-    .green(green),
-    .blue(blue)
+    .rst_n(1'b1),
+    .start(vp_start),
+    .operation(vp_operation),
+    .busy(vp_busy),
+    .done(vp_done),
+    .vec_a(vp_vec_a),
+    .vec_b(vp_vec_b),
+    .scalar(vp_scalar),
+    .result(vp_result),
+    .result_valid(vp_result_valid)
+);
+
+// Shader pipeline for generating colors
+wire shader_color_valid;
+shader_pipeline shader_pipe (
+    .clk(clk),
+    .rst_n(1'b1),
+    .pixel_x(sx),
+    .pixel_y(sy),
+    .pixel_valid(de),
+    .shader_select(shader_select),
+    .red_out(red),
+    .green_out(green),
+    .blue_out(blue),
+    .color_valid(shader_color_valid),
+    .vp_start(vp_start),
+    .vp_operation(vp_operation),
+    .vp_vec_a(vp_vec_a),
+    .vp_vec_b(vp_vec_b),
+    .vp_scalar(vp_scalar),
+    .vp_busy(vp_busy),
+    .vp_done(vp_done),
+    .vp_result(vp_result),
+    .vp_result_valid(vp_result_valid)
 );
 
 //reg [7:0] red, green, blue;
