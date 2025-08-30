@@ -95,7 +95,7 @@ always @(posedge clk or negedge rst_n) begin
         time_var <= 16'h0;
     end else begin
         frame_counter <= frame_counter + 1;
-        time_var <= frame_counter[22:15]; // Slower rotation - change every ~1.3 seconds at 25MHz
+        time_var <= frame_counter[23:16]; // Slower rotation - change every ~1.3 seconds at 25MHz
     end
 end
 
