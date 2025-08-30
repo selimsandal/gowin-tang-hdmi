@@ -76,6 +76,10 @@ reg [DATA_WIDTH-1:0] temp_scalar;
 reg triangle_inside;
 reg [15:0] distance_to_center;
 reg [15:0] triangle_radius;
+reg signed [15:0] dx, dy;
+reg [15:0] center_x_px, center_y_px;
+reg [7:0] angle_approx;
+reg [15:0] angle_distance;
 
 // Animation parameters
 reg [7:0] rotation_phase;
@@ -93,26 +97,21 @@ end
 // Simple triangle calculation using distance from center
 always @(*) begin
     // Calculate distance from screen center (320, 240) to current pixel
-    reg signed [15:0] dx, dy;
-    reg [15:0] center_x_px, center_y_px;
-    
     center_x_px = SCREEN_WIDTH >> 1;  // 320
     center_y_px = SCREEN_HEIGHT >> 1; // 240
     
     // Distance calculation
-    dx = pixel_x - center_x_px;
-    dy = pixel_y - center_y_px;
+    dx = $signed({1'b0, pixel_x}) - $signed({1'b0, center_x_px});
+    dy = $signed({1'b0, pixel_y}) - $signed({1'b0, center_y_px});
     
     // Simple Manhattan distance (faster than Euclidean)
     distance_to_center = (dx >= 0 ? dx : -dx) + (dy >= 0 ? dy : -dy);
     
     // Create animated triangle radius (20-40 pixels)
-    triangle_radius = 25 + (rotation_phase[4:0] >> 1); // 25-37 pixels
+    triangle_radius = 25 + {11'b0, rotation_phase[4:2]}; // 25-32 pixels
     
     // Triangle shape based on angle and distance
     // Create 3-sided shape using modulo arithmetic
-    reg [7:0] angle_approx;
-    reg [15:0] angle_distance;
     
     // Approximate angle using dx/dy ratio (simplified)
     if (dx == 0 && dy == 0) begin
@@ -120,11 +119,11 @@ always @(*) begin
     end else if (dy >= 0 && dx >= 0) begin
         angle_approx = (dx > dy) ? 8'h00 : 8'h40; // 0° or 90° quadrant
     end else if (dy >= 0 && dx < 0) begin
-        angle_approx = (-dx > dy) ? 8'h80 : 8'h40; // 90° or 180° quadrant  
+        angle_approx = ((-dx) > dy) ? 8'h80 : 8'h40; // 90° or 180° quadrant  
     end else if (dy < 0 && dx < 0) begin
-        angle_approx = (-dx > -dy) ? 8'h80 : 8'hC0; // 180° or 270° quadrant
+        angle_approx = ((-dx) > (-dy)) ? 8'h80 : 8'hC0; // 180° or 270° quadrant
     end else begin
-        angle_approx = (dx > -dy) ? 8'h00 : 8'hC0; // 270° or 0° quadrant
+        angle_approx = (dx > (-dy)) ? 8'h00 : 8'hC0; // 270° or 0° quadrant
     end
     
     // Add rotation offset
