@@ -89,17 +89,96 @@ reg [15:0] color_rotation;
 reg [15:0] pulse_phase;
 reg [15:0] circle_radius;
 
+// Smooth rotation lookup tables (sine/cosine approximations)
+// Using 64 steps for smooth rotation (6-bit precision)
+reg signed [15:0] cos_lut [0:63];
+reg signed [15:0] sin_lut [0:63];
+reg [5:0] rotation_angle;
+
+// Initialize lookup tables with precomputed sine/cosine values
+// Using 64 steps for smooth rotation with 60-pixel radius
+initial begin
+    // Hardcoded sine/cosine lookup table for 64 positions
+    // Values scaled by 60 for triangle radius
+    cos_lut[0] = 60; sin_lut[0] = 0;       // 0°
+    cos_lut[1] = 59; sin_lut[1] = 6;       // 5.625°
+    cos_lut[2] = 57; sin_lut[2] = 12;      // 11.25°
+    cos_lut[3] = 54; sin_lut[3] = 18;      // 16.875°
+    cos_lut[4] = 51; sin_lut[4] = 24;      // 22.5°
+    cos_lut[5] = 47; sin_lut[5] = 29;      // 28.125°
+    cos_lut[6] = 42; sin_lut[6] = 34;      // 33.75°
+    cos_lut[7] = 37; sin_lut[7] = 38;      // 39.375°
+    cos_lut[8] = 32; sin_lut[8] = 42;      // 45°
+    cos_lut[9] = 27; sin_lut[9] = 46;      // 50.625°
+    cos_lut[10] = 21; sin_lut[10] = 49;    // 56.25°
+    cos_lut[11] = 15; sin_lut[11] = 52;    // 61.875°
+    cos_lut[12] = 9; sin_lut[12] = 54;     // 67.5°
+    cos_lut[13] = 3; sin_lut[13] = 56;     // 73.125°
+    cos_lut[14] = -3; sin_lut[14] = 57;    // 78.75°
+    cos_lut[15] = -9; sin_lut[15] = 58;    // 84.375°
+    cos_lut[16] = 0; sin_lut[16] = 60;     // 90°
+    cos_lut[17] = -6; sin_lut[17] = 59;    // 95.625°
+    cos_lut[18] = -12; sin_lut[18] = 57;   // 101.25°
+    cos_lut[19] = -18; sin_lut[19] = 54;   // 106.875°
+    cos_lut[20] = -24; sin_lut[20] = 51;   // 112.5°
+    cos_lut[21] = -29; sin_lut[21] = 47;   // 118.125°
+    cos_lut[22] = -34; sin_lut[22] = 42;   // 123.75°
+    cos_lut[23] = -38; sin_lut[23] = 37;   // 129.375°
+    cos_lut[24] = -42; sin_lut[24] = 32;   // 135°
+    cos_lut[25] = -46; sin_lut[25] = 27;   // 140.625°
+    cos_lut[26] = -49; sin_lut[26] = 21;   // 146.25°
+    cos_lut[27] = -52; sin_lut[27] = 15;   // 151.875°
+    cos_lut[28] = -54; sin_lut[28] = 9;    // 157.5°
+    cos_lut[29] = -56; sin_lut[29] = 3;    // 163.125°
+    cos_lut[30] = -57; sin_lut[30] = -3;   // 168.75°
+    cos_lut[31] = -58; sin_lut[31] = -9;   // 174.375°
+    cos_lut[32] = -60; sin_lut[32] = 0;    // 180°
+    cos_lut[33] = -59; sin_lut[33] = -6;   // 185.625°
+    cos_lut[34] = -57; sin_lut[34] = -12;  // 191.25°
+    cos_lut[35] = -54; sin_lut[35] = -18;  // 196.875°
+    cos_lut[36] = -51; sin_lut[36] = -24;  // 202.5°
+    cos_lut[37] = -47; sin_lut[37] = -29;  // 208.125°
+    cos_lut[38] = -42; sin_lut[38] = -34;  // 213.75°
+    cos_lut[39] = -37; sin_lut[39] = -38;  // 219.375°
+    cos_lut[40] = -32; sin_lut[40] = -42;  // 225°
+    cos_lut[41] = -27; sin_lut[41] = -46;  // 230.625°
+    cos_lut[42] = -21; sin_lut[42] = -49;  // 236.25°
+    cos_lut[43] = -15; sin_lut[43] = -52;  // 241.875°
+    cos_lut[44] = -9; sin_lut[44] = -54;   // 247.5°
+    cos_lut[45] = -3; sin_lut[45] = -56;   // 253.125°
+    cos_lut[46] = 3; sin_lut[46] = -57;    // 258.75°
+    cos_lut[47] = 9; sin_lut[47] = -58;    // 264.375°
+    cos_lut[48] = 0; sin_lut[48] = -60;    // 270°
+    cos_lut[49] = 6; sin_lut[49] = -59;    // 275.625°
+    cos_lut[50] = 12; sin_lut[50] = -57;   // 281.25°
+    cos_lut[51] = 18; sin_lut[51] = -54;   // 286.875°
+    cos_lut[52] = 24; sin_lut[52] = -51;   // 292.5°
+    cos_lut[53] = 29; sin_lut[53] = -47;   // 298.125°
+    cos_lut[54] = 34; sin_lut[54] = -42;   // 303.75°
+    cos_lut[55] = 38; sin_lut[55] = -37;   // 309.375°
+    cos_lut[56] = 42; sin_lut[56] = -32;   // 315°
+    cos_lut[57] = 46; sin_lut[57] = -27;   // 320.625°
+    cos_lut[58] = 49; sin_lut[58] = -21;   // 326.25°
+    cos_lut[59] = 52; sin_lut[59] = -15;   // 331.875°
+    cos_lut[60] = 54; sin_lut[60] = -9;    // 337.5°
+    cos_lut[61] = 56; sin_lut[61] = -3;    // 343.125°
+    cos_lut[62] = 57; sin_lut[62] = 3;     // 348.75°
+    cos_lut[63] = 58; sin_lut[63] = 9;     // 354.375°
+end
+
 always @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
         frame_counter <= 24'h0;
         rotation_phase <= 8'h0;
         color_rotation <= 16'h0;
         pulse_phase <= 16'h0;
+        rotation_angle <= 6'h0;
     end else begin
         frame_counter <= frame_counter + 1;
         rotation_phase <= frame_counter[23:18]; // Much slower animation - ~26 seconds per rotation
         color_rotation <= frame_counter[23:8];  // Color rotation - 10x slower, now very smooth
         pulse_phase <= frame_counter[21:6];     // Pulse animation - 10x slower, now very smooth
+        rotation_angle <= frame_counter[23:18]; // Smooth 64-step rotation, same speed as rotation_phase
     end
 end
 
@@ -122,29 +201,19 @@ always @(*) begin
     // Proper triangle using 3 edge tests
     // Define 3 triangle vertices in pixel space, rotating around center
     
-    // Calculate rotated triangle vertices (fixed 60 pixel radius)
-    case (rotation_phase[5:4]) // 4 rotation states, changes more frequently
-        2'b00: begin // 0 degrees
-            v0x = $signed(center_x_px);           v0y = $signed(center_y_px) - 60; // Top
-            v1x = $signed(center_x_px) - 52;      v1y = $signed(center_y_px) + 30; // Bottom left  
-            v2x = $signed(center_x_px) + 52;      v2y = $signed(center_y_px) + 30; // Bottom right
-        end
-        2'b01: begin // 90 degrees  
-            v0x = $signed(center_x_px) + 60;      v0y = $signed(center_y_px);      // Right
-            v1x = $signed(center_x_px) - 30;      v1y = $signed(center_y_px) - 52; // Top left
-            v2x = $signed(center_x_px) - 30;      v2y = $signed(center_y_px) + 52; // Bottom left
-        end
-        2'b10: begin // 180 degrees
-            v0x = $signed(center_x_px);           v0y = $signed(center_y_px) + 60; // Bottom
-            v1x = $signed(center_x_px) + 52;      v1y = $signed(center_y_px) - 30; // Top right
-            v2x = $signed(center_x_px) - 52;      v2y = $signed(center_y_px) - 30; // Top left  
-        end
-        2'b11: begin // 270 degrees
-            v0x = $signed(center_x_px) - 60;      v0y = $signed(center_y_px);      // Left
-            v1x = $signed(center_x_px) + 30;      v1y = $signed(center_y_px) + 52; // Bottom right
-            v2x = $signed(center_x_px) + 30;      v2y = $signed(center_y_px) - 52; // Top right
-        end
-    endcase
+    // Calculate smoothly rotated triangle vertices using lookup tables
+    // Triangle has 3 vertices: top (0°), bottom-left (120°), bottom-right (240°)
+    // Vertex 0: Top vertex
+    v0x = $signed(center_x_px) + sin_lut[rotation_angle];          
+    v0y = $signed(center_y_px) - cos_lut[rotation_angle];          
+    
+    // Vertex 1: Bottom-left vertex (120° offset)
+    v1x = $signed(center_x_px) + sin_lut[(rotation_angle + 6'd21) & 6'h3F];  // +120° with wrap-around
+    v1y = $signed(center_y_px) - cos_lut[(rotation_angle + 6'd21) & 6'h3F];  
+    
+    // Vertex 2: Bottom-right vertex (240° offset)  
+    v2x = $signed(center_x_px) + sin_lut[(rotation_angle + 6'd42) & 6'h3F];  // +240° with wrap-around
+    v2y = $signed(center_y_px) - cos_lut[(rotation_angle + 6'd42) & 6'h3F];
     
     // Edge function tests (cross product for each edge)
     edge1 = (v1x - v0x) * ($signed({1'b0, pixel_y}) - v0y) - (v1y - v0y) * ($signed({1'b0, pixel_x}) - v0x);
