@@ -44,6 +44,8 @@ localparam SHADER_CHECKER    = 4'h3;    // Checkerboard
 localparam SHADER_SINE_WAVE  = 4'h4;    // Sine wave pattern
 localparam SHADER_SPIRAL     = 4'h5;    // Spiral pattern
 localparam SHADER_TRIANGLE   = 4'h6;    // Rotating triangle
+localparam SHADER_ROTATING_COLORS = 4'h7; // Rotating color wheel
+localparam SHADER_PULSING_CIRCLES = 4'h8; // Pulsing concentric circles
 
 // Pipeline states
 localparam IDLE = 3'h0;
@@ -83,14 +85,21 @@ reg signed [31:0] edge1, edge2, edge3;
 
 // Animation parameters
 reg [7:0] rotation_phase;
+reg [15:0] color_rotation;
+reg [15:0] pulse_phase;
+reg [15:0] circle_radius;
 
 always @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
         frame_counter <= 24'h0;
         rotation_phase <= 8'h0;
+        color_rotation <= 16'h0;
+        pulse_phase <= 16'h0;
     end else begin
         frame_counter <= frame_counter + 1;
         rotation_phase <= frame_counter[23:18]; // Much slower animation - ~26 seconds per rotation
+        color_rotation <= frame_counter[23:8];  // Color rotation - 10x slower, now very smooth
+        pulse_phase <= frame_counter[21:6];     // Pulse animation - 10x slower, now very smooth
     end
 end
 
@@ -189,8 +198,8 @@ always @(*) begin
         end
         
         EXECUTE_SHADER: begin
-            if (shader_select == SHADER_TRIANGLE) begin
-                // Triangle shader bypasses vector processor
+            if (shader_select == SHADER_TRIANGLE || shader_select == SHADER_ROTATING_COLORS || shader_select == SHADER_PULSING_CIRCLES) begin
+                // These shaders bypass vector processor
                 next_state = OUTPUT_COLOR;
             end else if (vp_start) begin
                 next_state = WAIT_RESULT;
@@ -288,6 +297,24 @@ always @(posedge clk or negedge rst_n) begin
                         vp_vec_b <= 64'h0;
                     end
                     
+                    SHADER_ROTATING_COLORS: begin
+                        // Rotating colors shader - direct computation
+                        // No vector processor needed
+                        vp_start <= 1'b0;
+                        vp_operation <= 4'h0;
+                        vp_vec_a <= 64'h0;
+                        vp_vec_b <= 64'h0;
+                    end
+                    
+                    SHADER_PULSING_CIRCLES: begin
+                        // Pulsing circles shader - direct computation
+                        // No vector processor needed
+                        vp_start <= 1'b0;
+                        vp_operation <= 4'h0;
+                        vp_vec_a <= 64'h0;
+                        vp_vec_b <= 64'h0;
+                    end
+                    
                     default: begin
                         // Default: solid color
                         vp_start <= 1'b1;
@@ -301,17 +328,68 @@ always @(posedge clk or negedge rst_n) begin
             OUTPUT_COLOR: begin
                 // Convert fixed-point result to 8-bit RGB
                 if (shader_select == SHADER_TRIANGLE) begin
-                    // Simple distance-based triangle
+                    // Triangle with animated gradient background
                     if (triangle_inside) begin
                         // Bright triangle with color animation
                         red_out   <= 8'hFF;                                    // Bright red
                         green_out <= 8'h40 + {2'b0, rotation_phase[5:0]};     // Animated green  
                         blue_out  <= 8'h80;                                    // Blue
                     end else begin
-                        // Dark background
-                        red_out   <= 8'h10;                                
-                        green_out <= 8'h15; 
-                        blue_out  <= 8'h20;
+                        // Beautiful animated gradient background
+                        // Create a radial gradient with color shifting
+                        red_out   <= (norm_x >> 1) + (rotation_phase >> 2);   // X-based red with animation
+                        green_out <= (norm_y >> 1) + (rotation_phase >> 3);   // Y-based green with animation
+                        blue_out  <= 8'h60 + ((norm_x ^ norm_y) >> 2) + (rotation_phase >> 4); // Mixed blue with animation
+                    end
+                end else if (shader_select == SHADER_ROTATING_COLORS) begin
+                    // Rotating color wheel based on position and time
+                    // Create HSV-like color wheel effect
+                    temp_scalar = ((norm_x + norm_y) >> 1) + color_rotation[15:8]; // Position + rotation
+                    case (temp_scalar[7:6]) // 4 color sectors
+                        2'b00: begin // Red to Yellow transition
+                            red_out   <= 8'hFF;
+                            green_out <= temp_scalar[5:0] << 2; // Fade in green
+                            blue_out  <= 8'h20;
+                        end
+                        2'b01: begin // Yellow to Green transition  
+                            red_out   <= 8'hFF - (temp_scalar[5:0] << 2); // Fade out red
+                            green_out <= 8'hFF;
+                            blue_out  <= 8'h20;
+                        end
+                        2'b10: begin // Green to Blue transition
+                            red_out   <= 8'h20;
+                            green_out <= 8'hFF - (temp_scalar[5:0] << 2); // Fade out green
+                            blue_out  <= temp_scalar[5:0] << 2; // Fade in blue
+                        end
+                        2'b11: begin // Blue to Red transition
+                            red_out   <= temp_scalar[5:0] << 2; // Fade in red
+                            green_out <= 8'h20;
+                            blue_out  <= 8'hFF - (temp_scalar[5:0] << 2); // Fade out blue
+                        end
+                    endcase
+                end else if (shader_select == SHADER_PULSING_CIRCLES) begin
+                    // Concentric pulsing circles
+                    circle_radius = 30 + (pulse_phase[10:4]); // Pulsing radius 30-158
+                    temp_scalar = distance_to_center; // Reuse distance calculation from triangle
+                    
+                    // Create multiple concentric circles
+                    if ((temp_scalar[7:0] ^ circle_radius[7:0]) < 8'd15) begin // Ring 1
+                        red_out   <= 8'hFF;
+                        green_out <= 8'h40;
+                        blue_out  <= pulse_phase[11:4];
+                    end else if (((temp_scalar[8:1] ^ circle_radius[8:1]) < 7'd10)) begin // Ring 2  
+                        red_out   <= pulse_phase[10:3];
+                        green_out <= 8'hFF;
+                        blue_out  <= 8'h60;
+                    end else if (((temp_scalar[9:2] ^ circle_radius[9:2]) < 6'd8)) begin // Ring 3
+                        red_out   <= 8'h80;
+                        green_out <= pulse_phase[9:2];
+                        blue_out  <= 8'hFF;
+                    end else begin
+                        // Background with subtle animation
+                        red_out   <= 8'h20 + pulse_phase[7:5];
+                        green_out <= 8'h15 + pulse_phase[8:6]; 
+                        blue_out  <= 8'h30 + pulse_phase[6:4];
                     end
                 end else if (shader_select == SHADER_RADIAL) begin
                     // For radial, use distance as brightness
