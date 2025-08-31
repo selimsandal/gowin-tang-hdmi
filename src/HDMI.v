@@ -108,12 +108,17 @@ wire conv_enable = (shader_select == 4'h9); // Enable convolution for shader 9
 wire [9:0] conv_req_x, conv_req_y;
 wire conv_req_valid;
 
-// If we're in magnified region, map back to original coordinates
-assign conv_req_valid = de && (shader_select == 4'h9) && 
-                       (sx >= 10'd192 && sx <= 10'd447) && 
-                       (sy >= 10'd112 && sy <= 10'd367);
-assign conv_req_x = conv_req_valid ? (10'd288 + ((sx - 10'd192) >> 2)) : sx;
-assign conv_req_y = conv_req_valid ? (10'd208 + ((sy - 10'd112) >> 2)) : sy;
+// Always provide proper coordinates to convolution engine
+// When in magnified region, map back to original coordinates with bounds checking
+wire in_mag_region = (sx >= 10'd192 && sx <= 10'd447) && (sy >= 10'd112 && sy <= 10'd367);
+wire [9:0] mag_offset_x = sx - 10'd192;
+wire [9:0] mag_offset_y = sy - 10'd112;
+wire [9:0] conv_mapped_x = 10'd288 + (mag_offset_x >> 2);
+wire [9:0] conv_mapped_y = 10'd208 + (mag_offset_y >> 2);
+
+assign conv_req_valid = de;
+assign conv_req_x = (shader_select == 4'h9 && in_mag_region) ? conv_mapped_x : sx;
+assign conv_req_y = (shader_select == 4'h9 && in_mag_region) ? conv_mapped_y : sy;
 
 convolution_engine conv_engine (
     .clk(clk),
@@ -121,7 +126,7 @@ convolution_engine conv_engine (
     .pixel_in(synthetic_pixel),
     .pixel_x(conv_req_x),
     .pixel_y(conv_req_y),
-    .pixel_valid(conv_req_valid ? conv_req_valid : de),
+    .pixel_valid(de),
     .kernel_select(kernel_select),
     .conv_enable(conv_enable),
     .pixel_out(conv_pixel_out),
