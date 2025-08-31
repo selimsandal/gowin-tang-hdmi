@@ -97,6 +97,10 @@ reg [15:0] color_rotation;
 reg [15:0] pulse_phase;
 reg [15:0] circle_radius;
 
+// Magnification coordinate mapping temporaries
+reg [9:0] mag_proc_x, mag_proc_y;
+reg [9:0] pattern_x, pattern_y;
+
 
 // Smooth rotation lookup tables (sine/cosine approximations)
 // Using 64 steps for smooth rotation (6-bit precision)
@@ -479,20 +483,30 @@ always @(posedge clk or negedge rst_n) begin
                         blue_out  <= 8'h30 + pulse_phase[6:4];
                     end
                 end else if (shader_select == SHADER_CONVOLUTION) begin
-                    // Slow block-by-block convolution visualization
+                    // 4x Magnified slow block-by-block convolution visualization
+                    // Map screen coordinates to magnified convolution space
+                    // Magnified region: 256x256 centered on screen (192,112) to (447,367)
                     
-                    // Show the current processing cursor - bright white crosshair
-                    if (((pixel_x >= conv_processing_x - 10'd5 && pixel_x <= conv_processing_x + 10'd5) && pixel_y == conv_processing_y) ||
-                        ((pixel_y >= conv_processing_y - 10'd5 && pixel_y <= conv_processing_y + 10'd5) && pixel_x == conv_processing_x)) begin
-                        // Bright white processing cursor
+                    // Calculate coordinate mappings
+                    mag_proc_x <= 10'd192 + ((conv_processing_x - 10'd288) << 2);
+                    mag_proc_y <= 10'd112 + ((conv_processing_y - 10'd208) << 2);
+                    pattern_x <= 10'd288 + ((pixel_x - 10'd192) >> 2);
+                    pattern_y <= 10'd208 + ((pixel_y - 10'd112) >> 2);
+                    
+                    // Show the current processing cursor - bright white crosshair (magnified)
+                    if (((pixel_x >= mag_proc_x - 10'd8 && pixel_x <= mag_proc_x + 10'd8) && 
+                         (pixel_y >= mag_proc_y && pixel_y <= mag_proc_y + 10'd3)) ||
+                        ((pixel_y >= mag_proc_y - 10'd8 && pixel_y <= mag_proc_y + 10'd8) && 
+                         (pixel_x >= mag_proc_x && pixel_x <= mag_proc_x + 10'd3))) begin
+                        // Bright white processing cursor (4x4 block)
                         red_out   <= 8'hFF;
                         green_out <= 8'hFF;
                         blue_out  <= 8'hFF;
                     end
-                    // Show a bright box around the current processing position (3x3 window)
-                    else if ((pixel_x >= conv_processing_x - 10'd1 && pixel_x <= conv_processing_x + 10'd1) && 
-                             (pixel_y >= conv_processing_y - 10'd1 && pixel_y <= conv_processing_y + 10'd1)) begin
-                        // Bright colored box showing 3x3 convolution window
+                    // Show a bright box around the current processing position (3x3 window, magnified to 12x12)
+                    else if ((pixel_x >= mag_proc_x - 10'd4 && pixel_x <= mag_proc_x + 10'd7) && 
+                             (pixel_y >= mag_proc_y - 10'd4 && pixel_y <= mag_proc_y + 10'd7)) begin
+                        // Bright colored box showing 3x3 convolution window (magnified)
                         case (conv_kernel_select)
                             2'h0: begin red_out <= 8'hFF; green_out <= 8'hFF; blue_out <= 8'hFF; end // White - Identity
                             2'h1: begin red_out <= 8'hFF; green_out <= 8'h00; blue_out <= 8'h00; end // Red - Edge
@@ -500,11 +514,14 @@ always @(posedge clk or negedge rst_n) begin
                             2'h3: begin red_out <= 8'hFF; green_out <= 8'hFF; blue_out <= 8'h00; end // Yellow - Sharpen
                         endcase
                     end
-                    // Show framebuffer results for the entire processing region (64x64 centered area)
+                    // Show framebuffer results for the magnified processing region (256x256 centered area)
                     else if (conv_valid_in && 
-                             (pixel_x >= 10'd288 && pixel_x <= 10'd351) &&
-                             (pixel_y >= 10'd208 && pixel_y <= 10'd271)) begin
-                        // Display convolution result with kernel-specific coloring across entire processing region
+                             (pixel_x >= 10'd192 && pixel_x <= 10'd447) &&
+                             (pixel_y >= 10'd112 && pixel_y <= 10'd367)) begin
+                        // Map magnified coordinates back to original convolution coordinates
+                        // Each 4x4 block maps to one convolution pixel (calculated inline)
+                        
+                        // Display convolution result with kernel-specific coloring (magnified 4x4 blocks)
                         case (conv_kernel_select) // Use dedicated convolution kernel select
                             2'h0: begin // Identity - grayscale
                                 red_out   <= conv_pixel_in;
@@ -538,18 +555,19 @@ always @(posedge clk or negedge rst_n) begin
                         endcase
                     end
                     else begin
-                        // Show background - test pattern inside processing region, dark outside
-                        if ((pixel_x >= 10'd288 && pixel_x <= 10'd351) &&
-                            (pixel_y >= 10'd208 && pixel_y <= 10'd271)) begin
-                            // Inside processing region - show clear test pattern for convolution
+                        // Show background - magnified test pattern inside processing region, dark outside
+                        if ((pixel_x >= 10'd192 && pixel_x <= 10'd447) &&
+                            (pixel_y >= 10'd112 && pixel_y <= 10'd367)) begin
+                            // Inside magnified processing region - show test pattern (4x4 blocks)
+                            // Map back to original coordinates for pattern generation (inline)
                             case (conv_kernel_select) // Pattern selection based on kernel
-                                2'h0: begin // Checkerboard for identity
-                                    red_out   <= ((pixel_x[4] ^ pixel_y[4]) & 1) ? 8'hC0 : 8'h40;
-                                    green_out <= ((pixel_x[4] ^ pixel_y[4]) & 1) ? 8'hC0 : 8'h40;
-                                    blue_out  <= ((pixel_x[4] ^ pixel_y[4]) & 1) ? 8'hC0 : 8'h40;
+                                2'h0: begin // Checkerboard for identity (magnified)
+                                    red_out   <= ((pattern_x[4] ^ pattern_y[4]) & 1) ? 8'hC0 : 8'h40;
+                                    green_out <= ((pattern_x[4] ^ pattern_y[4]) & 1) ? 8'hC0 : 8'h40;
+                                    blue_out  <= ((pattern_x[4] ^ pattern_y[4]) & 1) ? 8'hC0 : 8'h40;
                                 end
-                                2'h1: begin // Sharp edges for edge detection
-                                    if ((pixel_x > 300 && pixel_x < 340 && pixel_y > 220 && pixel_y < 260)) begin
+                                2'h1: begin // Sharp edges for edge detection (magnified)
+                                    if ((pattern_x > 300 && pattern_x < 340 && pattern_y > 220 && pattern_y < 260)) begin
                                         red_out   <= 8'hE0;
                                         green_out <= 8'hE0;
                                         blue_out  <= 8'hE0;
@@ -559,19 +577,19 @@ always @(posedge clk or negedge rst_n) begin
                                         blue_out  <= 8'h30;
                                     end
                                 end
-                                2'h2: begin // High frequency pattern for blur
-                                    red_out   <= ((pixel_x[3] ^ pixel_y[3]) & 1) ? 8'hA0 : 8'h60;
-                                    green_out <= ((pixel_x[3] ^ pixel_y[3]) & 1) ? 8'hA0 : 8'h60;
-                                    blue_out  <= ((pixel_x[3] ^ pixel_y[3]) & 1) ? 8'hA0 : 8'h60;
+                                2'h2: begin // High frequency pattern for blur (magnified)
+                                    red_out   <= ((pattern_x[3] ^ pattern_y[3]) & 1) ? 8'hA0 : 8'h60;
+                                    green_out <= ((pattern_x[3] ^ pattern_y[3]) & 1) ? 8'hA0 : 8'h60;
+                                    blue_out  <= ((pattern_x[3] ^ pattern_y[3]) & 1) ? 8'hA0 : 8'h60;
                                 end
-                                2'h3: begin // Smooth pattern for sharpen
-                                    red_out   <= 8'h80 + (pixel_x[5:3] * pixel_y[5:3]);
-                                    green_out <= 8'h80 + (pixel_x[5:3] * pixel_y[5:3]);
-                                    blue_out  <= 8'h80 + (pixel_x[5:3] * pixel_y[5:3]);
+                                2'h3: begin // Smooth pattern for sharpen (magnified)
+                                    red_out   <= 8'h80 + (pattern_x[5:3] * pattern_y[5:3]);
+                                    green_out <= 8'h80 + (pattern_x[5:3] * pattern_y[5:3]);
+                                    blue_out  <= 8'h80 + (pattern_x[5:3] * pattern_y[5:3]);
                                 end
                             endcase
                         end else begin
-                            // Outside processing region - dark background
+                            // Outside magnified processing region - dark background
                             red_out   <= 8'h10;
                             green_out <= 8'h10;
                             blue_out  <= 8'h10;

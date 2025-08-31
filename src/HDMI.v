@@ -104,13 +104,24 @@ wire [9:0] conv_processing_x, conv_processing_y; // Current processing position
 wire [1:0] kernel_select = conv_kernel_select; // Use dedicated convolution kernel selection
 wire conv_enable = (shader_select == 4'h9); // Enable convolution for shader 9
 
+// Map magnified screen coordinates back to convolution coordinates
+wire [9:0] conv_req_x, conv_req_y;
+wire conv_req_valid;
+
+// If we're in magnified region, map back to original coordinates
+assign conv_req_valid = de && (shader_select == 4'h9) && 
+                       (sx >= 10'd192 && sx <= 10'd447) && 
+                       (sy >= 10'd112 && sy <= 10'd367);
+assign conv_req_x = conv_req_valid ? (10'd288 + ((sx - 10'd192) >> 2)) : sx;
+assign conv_req_y = conv_req_valid ? (10'd208 + ((sy - 10'd112) >> 2)) : sy;
+
 convolution_engine conv_engine (
     .clk(clk),
     .rst_n(rst_n),
     .pixel_in(synthetic_pixel),
-    .pixel_x(sx),
-    .pixel_y(sy),
-    .pixel_valid(de),
+    .pixel_x(conv_req_x),
+    .pixel_y(conv_req_y),
+    .pixel_valid(conv_req_valid ? conv_req_valid : de),
     .kernel_select(kernel_select),
     .conv_enable(conv_enable),
     .pixel_out(conv_pixel_out),
