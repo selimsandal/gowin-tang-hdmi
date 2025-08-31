@@ -303,8 +303,25 @@ always @(posedge clk or negedge rst_n) begin
                     // This pixel has been processed - read from framebuffer
                     pixel_out <= fb_read_data;
                 end else begin
-                    // This pixel hasn't been processed yet - show original pattern or zero
-                    pixel_out <= 8'h20; // Dark gray for unprocessed areas
+                    // This pixel hasn't been processed yet - show original test pattern
+                    case (kernel_select)
+                        KERNEL_IDENTITY: begin // Checkerboard
+                            pixel_out <= ((pixel_x[4] ^ pixel_y[4]) & 1) ? 8'hC0 : 8'h40;
+                        end
+                        KERNEL_EDGE: begin // Sharp edges for edge detection
+                            if ((pixel_x > 300 && pixel_x < 340 && pixel_y > 220 && pixel_y < 260)) begin
+                                pixel_out <= 8'hE0;
+                            end else begin
+                                pixel_out <= 8'h30;
+                            end
+                        end
+                        KERNEL_BLUR: begin // High frequency pattern for blur
+                            pixel_out <= ((pixel_x[3] ^ pixel_y[3]) & 1) ? 8'hA0 : 8'h60;
+                        end
+                        KERNEL_SHARPEN: begin // Smooth pattern for sharpen
+                            pixel_out <= 8'h80 + (pixel_x[5:3] * pixel_y[5:3]);
+                        end
+                    endcase
                 end
             end else begin
                 pixel_out <= 8'h00; // Black outside processing region

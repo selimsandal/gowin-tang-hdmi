@@ -500,11 +500,11 @@ always @(posedge clk or negedge rst_n) begin
                             2'h3: begin red_out <= 8'hFF; green_out <= 8'hFF; blue_out <= 8'h00; end // Yellow - Sharpen
                         endcase
                     end
-                    // Show processed result in a small area around the cursor
+                    // Show framebuffer results for the entire processing region (64x64 centered area)
                     else if (conv_valid_in && 
-                             (pixel_x >= conv_processing_x - 10'd20 && pixel_x <= conv_processing_x + 10'd20) &&
-                             (pixel_y >= conv_processing_y - 10'd20 && pixel_y <= conv_processing_y + 10'd20)) begin
-                        // Display convolution result with kernel-specific coloring in a small region
+                             (pixel_x >= 10'd288 && pixel_x <= 10'd351) &&
+                             (pixel_y >= 10'd208 && pixel_y <= 10'd271)) begin
+                        // Display convolution result with kernel-specific coloring across entire processing region
                         case (conv_kernel_select) // Use dedicated convolution kernel select
                             2'h0: begin // Identity - grayscale
                                 red_out   <= conv_pixel_in;
@@ -538,35 +538,44 @@ always @(posedge clk or negedge rst_n) begin
                         endcase
                     end
                     else begin
-                        // Show background test pattern that convolution will process
-                        case (conv_kernel_select) // Pattern selection based on kernel
-                            2'h0: begin // Checkerboard
-                                red_out   <= ((pixel_x[4] ^ pixel_y[4]) & 1) ? 8'h80 : 8'h20;
-                                green_out <= ((pixel_x[4] ^ pixel_y[4]) & 1) ? 8'h80 : 8'h20;
-                                blue_out  <= ((pixel_x[4] ^ pixel_y[4]) & 1) ? 8'h80 : 8'h20;
-                            end
-                            2'h1: begin // Horizontal gradient
-                                red_out   <= pixel_x[7:0] >> 1;
-                                green_out <= pixel_x[7:0] >> 1;
-                                blue_out  <= pixel_x[7:0] >> 1;
-                            end
-                            2'h2: begin // Geometric shapes
-                                if ((pixel_x > 200 && pixel_x < 400 && pixel_y > 150 && pixel_y < 350)) begin
-                                    red_out   <= 8'h60;
-                                    green_out <= 8'h60;
-                                    blue_out  <= 8'h60;
-                                end else begin
-                                    red_out   <= 8'h20;
-                                    green_out <= 8'h20;
-                                    blue_out  <= 8'h20;
+                        // Show background - test pattern inside processing region, dark outside
+                        if ((pixel_x >= 10'd288 && pixel_x <= 10'd351) &&
+                            (pixel_y >= 10'd208 && pixel_y <= 10'd271)) begin
+                            // Inside processing region - show clear test pattern for convolution
+                            case (conv_kernel_select) // Pattern selection based on kernel
+                                2'h0: begin // Checkerboard for identity
+                                    red_out   <= ((pixel_x[4] ^ pixel_y[4]) & 1) ? 8'hC0 : 8'h40;
+                                    green_out <= ((pixel_x[4] ^ pixel_y[4]) & 1) ? 8'hC0 : 8'h40;
+                                    blue_out  <= ((pixel_x[4] ^ pixel_y[4]) & 1) ? 8'hC0 : 8'h40;
                                 end
-                            end
-                            2'h3: begin // Stripes
-                                red_out   <= pixel_x[5] ? 8'h60 : 8'h20;
-                                green_out <= pixel_x[5] ? 8'h60 : 8'h20;
-                                blue_out  <= pixel_x[5] ? 8'h60 : 8'h20;
-                            end
-                        endcase
+                                2'h1: begin // Sharp edges for edge detection
+                                    if ((pixel_x > 300 && pixel_x < 340 && pixel_y > 220 && pixel_y < 260)) begin
+                                        red_out   <= 8'hE0;
+                                        green_out <= 8'hE0;
+                                        blue_out  <= 8'hE0;
+                                    end else begin
+                                        red_out   <= 8'h30;
+                                        green_out <= 8'h30;
+                                        blue_out  <= 8'h30;
+                                    end
+                                end
+                                2'h2: begin // High frequency pattern for blur
+                                    red_out   <= ((pixel_x[3] ^ pixel_y[3]) & 1) ? 8'hA0 : 8'h60;
+                                    green_out <= ((pixel_x[3] ^ pixel_y[3]) & 1) ? 8'hA0 : 8'h60;
+                                    blue_out  <= ((pixel_x[3] ^ pixel_y[3]) & 1) ? 8'hA0 : 8'h60;
+                                end
+                                2'h3: begin // Smooth pattern for sharpen
+                                    red_out   <= 8'h80 + (pixel_x[5:3] * pixel_y[5:3]);
+                                    green_out <= 8'h80 + (pixel_x[5:3] * pixel_y[5:3]);
+                                    blue_out  <= 8'h80 + (pixel_x[5:3] * pixel_y[5:3]);
+                                end
+                            endcase
+                        end else begin
+                            // Outside processing region - dark background
+                            red_out   <= 8'h10;
+                            green_out <= 8'h10;
+                            blue_out  <= 8'h10;
+                        end
                     end
                 end else if (shader_select == SHADER_RADIAL) begin
                     // For radial, use distance as brightness
