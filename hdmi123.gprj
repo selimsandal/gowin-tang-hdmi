@@ -6,7 +6,9 @@
     <Device name="GW2AR-18C" pn="GW2AR-LV18QN88PFC9/I8">gw2ar18c-016</Device>
     <FileList>
         <File path="src/HDMI.v" type="file.verilog" enable="1"/>
+        <File path="src/convolution_engine.v" type="file.verilog" enable="1"/>
         <File path="src/gowin_rpll/gowin_rpll.v" type="file.verilog" enable="1"/>
+        <File path="src/image_generator.v" type="file.verilog" enable="1"/>
         <File path="src/shader_demo.v" type="file.verilog" enable="1"/>
         <File path="src/shader_pipeline.v" type="file.verilog" enable="1"/>
         <File path="src/simple480p.v" type="file.verilog" enable="1"/>

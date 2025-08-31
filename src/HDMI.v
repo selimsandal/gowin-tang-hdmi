@@ -15,12 +15,14 @@ wire [7:0] red, green, blue;
 
 // Shader selection from button-controlled demo
 wire [3:0] shader_select;
+wire [1:0] conv_kernel_select;
 wire rst_n = !buttonReset; // Invert button signal for proper reset behavior
 shader_demo demo_ctrl (
     .clk(clk),
     .rst_n(rst_n),
     .button_next(buttonUser),
-    .shader_select(shader_select)
+    .shader_select(shader_select),
+    .conv_kernel_select(conv_kernel_select)
 );
 simple480p s480p(
     .clk(clk),
@@ -66,6 +68,57 @@ vector_processor vpu (
     .result_valid(vp_result_valid)
 );
 
+// Synthetic image generator for convolution testing
+wire [7:0] synthetic_pixel;
+wire synthetic_pixel_valid;
+wire [1:0] image_pattern = shader_select[1:0]; // Reduced to 2 bits
+wire [15:0] frame_counter;
+
+// Simplified frame counter for animation
+reg [15:0] frame_cnt;
+always @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+        frame_cnt <= 16'h0;
+    end else begin
+        frame_cnt <= frame_cnt + 1;
+    end
+end
+assign frame_counter = frame_cnt;
+
+image_generator img_gen (
+    .clk(clk),
+    .rst_n(rst_n),
+    .pixel_x(sx),
+    .pixel_y(sy),
+    .pixel_valid(de),
+    .pattern_select(image_pattern),
+    .frame_counter(frame_counter),
+    .pixel_out(synthetic_pixel),
+    .pixel_out_valid(synthetic_pixel_valid)
+);
+
+// Convolution engine for real-time image processing
+wire [7:0] conv_pixel_out;
+wire conv_pixel_valid;
+wire [9:0] conv_processing_x, conv_processing_y; // Current processing position
+wire [1:0] kernel_select = conv_kernel_select; // Use dedicated convolution kernel selection
+wire conv_enable = (shader_select == 4'h9); // Enable convolution for shader 9
+
+convolution_engine conv_engine (
+    .clk(clk),
+    .rst_n(rst_n),
+    .pixel_in(synthetic_pixel),
+    .pixel_x(sx),
+    .pixel_y(sy),
+    .pixel_valid(de),
+    .kernel_select(kernel_select),
+    .conv_enable(conv_enable),
+    .pixel_out(conv_pixel_out),
+    .pixel_out_valid(conv_pixel_valid),
+    .processing_x(conv_processing_x),
+    .processing_y(conv_processing_y)
+);
+
 // Shader pipeline for generating colors
 wire shader_color_valid;
 shader_pipeline shader_pipe (
@@ -87,7 +140,12 @@ shader_pipeline shader_pipe (
     .vp_busy(vp_busy),
     .vp_done(vp_done),
     .vp_result(vp_result),
-    .vp_result_valid(vp_result_valid)
+    .vp_result_valid(vp_result_valid),
+    // Convolution interface (simplified)
+    .conv_pixel_in(conv_pixel_out),
+    .conv_valid_in(conv_pixel_valid),
+    .conv_processing_x(conv_processing_x),
+    .conv_processing_y(conv_processing_y)
 );
 
 //reg [7:0] red, green, blue;

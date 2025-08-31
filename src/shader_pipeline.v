@@ -33,7 +33,14 @@ module shader_pipeline #(
     input vp_busy,
     input vp_done,
     input [VECTOR_WIDTH*DATA_WIDTH-1:0] vp_result,
-    input vp_result_valid
+    input vp_result_valid,
+    
+    // Convolution engine interface (simplified)
+    input [7:0] conv_pixel_in,
+    input conv_valid_in,
+    input [9:0] conv_processing_x,
+    input [9:0] conv_processing_y,
+    input [1:0] conv_kernel_select
 );
 
 // Shader programs
@@ -46,6 +53,7 @@ localparam SHADER_SPIRAL     = 4'h5;    // Spiral pattern
 localparam SHADER_TRIANGLE   = 4'h6;    // Rotating triangle
 localparam SHADER_ROTATING_COLORS = 4'h7; // Rotating color wheel
 localparam SHADER_PULSING_CIRCLES = 4'h8; // Pulsing concentric circles
+localparam SHADER_CONVOLUTION = 4'h9; // Real-time convolution processing
 
 // Pipeline states
 localparam IDLE = 3'h0;
@@ -88,6 +96,7 @@ reg [7:0] rotation_phase;
 reg [15:0] color_rotation;
 reg [15:0] pulse_phase;
 reg [15:0] circle_radius;
+
 
 // Smooth rotation lookup tables (sine/cosine approximations)
 // Using 64 steps for smooth rotation (6-bit precision)
@@ -267,7 +276,7 @@ always @(*) begin
         end
         
         EXECUTE_SHADER: begin
-            if (shader_select == SHADER_TRIANGLE || shader_select == SHADER_ROTATING_COLORS || shader_select == SHADER_PULSING_CIRCLES) begin
+            if (shader_select == SHADER_TRIANGLE || shader_select == SHADER_ROTATING_COLORS || shader_select == SHADER_PULSING_CIRCLES || shader_select == SHADER_CONVOLUTION) begin
                 // These shaders bypass vector processor
                 next_state = OUTPUT_COLOR;
             end else if (vp_start) begin
@@ -384,6 +393,15 @@ always @(posedge clk or negedge rst_n) begin
                         vp_vec_b <= 64'h0;
                     end
                     
+                    SHADER_CONVOLUTION: begin
+                        // Real-time convolution processing - direct computation
+                        // No vector processor needed
+                        vp_start <= 1'b0;
+                        vp_operation <= 4'h0;
+                        vp_vec_a <= 64'h0;
+                        vp_vec_b <= 64'h0;
+                    end
+                    
                     default: begin
                         // Default: solid color
                         vp_start <= 1'b1;
@@ -459,6 +477,96 @@ always @(posedge clk or negedge rst_n) begin
                         red_out   <= 8'h20 + pulse_phase[7:5];
                         green_out <= 8'h15 + pulse_phase[8:6]; 
                         blue_out  <= 8'h30 + pulse_phase[6:4];
+                    end
+                end else if (shader_select == SHADER_CONVOLUTION) begin
+                    // Slow block-by-block convolution visualization
+                    
+                    // Show the current processing cursor - bright white crosshair
+                    if (((pixel_x >= conv_processing_x - 10'd5 && pixel_x <= conv_processing_x + 10'd5) && pixel_y == conv_processing_y) ||
+                        ((pixel_y >= conv_processing_y - 10'd5 && pixel_y <= conv_processing_y + 10'd5) && pixel_x == conv_processing_x)) begin
+                        // Bright white processing cursor
+                        red_out   <= 8'hFF;
+                        green_out <= 8'hFF;
+                        blue_out  <= 8'hFF;
+                    end
+                    // Show a bright box around the current processing position (3x3 window)
+                    else if ((pixel_x >= conv_processing_x - 10'd1 && pixel_x <= conv_processing_x + 10'd1) && 
+                             (pixel_y >= conv_processing_y - 10'd1 && pixel_y <= conv_processing_y + 10'd1)) begin
+                        // Bright colored box showing 3x3 convolution window
+                        case (conv_kernel_select)
+                            2'h0: begin red_out <= 8'hFF; green_out <= 8'hFF; blue_out <= 8'hFF; end // White - Identity
+                            2'h1: begin red_out <= 8'hFF; green_out <= 8'h00; blue_out <= 8'h00; end // Red - Edge
+                            2'h2: begin red_out <= 8'h00; green_out <= 8'h00; blue_out <= 8'hFF; end // Blue - Blur
+                            2'h3: begin red_out <= 8'hFF; green_out <= 8'hFF; blue_out <= 8'h00; end // Yellow - Sharpen
+                        endcase
+                    end
+                    // Show processed result in a small area around the cursor
+                    else if (conv_valid_in && 
+                             (pixel_x >= conv_processing_x - 10'd20 && pixel_x <= conv_processing_x + 10'd20) &&
+                             (pixel_y >= conv_processing_y - 10'd20 && pixel_y <= conv_processing_y + 10'd20)) begin
+                        // Display convolution result with kernel-specific coloring in a small region
+                        case (conv_kernel_select) // Use dedicated convolution kernel select
+                            2'h0: begin // Identity - grayscale
+                                red_out   <= conv_pixel_in;
+                                green_out <= conv_pixel_in;
+                                blue_out  <= conv_pixel_in;
+                            end
+                            2'h1: begin // Edge detection - cyan
+                                red_out   <= 8'h00;
+                                green_out <= conv_pixel_in;
+                                blue_out  <= conv_pixel_in;
+                            end
+                            2'h2: begin // Blur - blue tint
+                                red_out   <= conv_pixel_in >> 1;
+                                green_out <= conv_pixel_in >> 1;
+                                blue_out  <= conv_pixel_in;
+                            end
+                            2'h3: begin // Sharpen - yellow tint
+                                red_out   <= conv_pixel_in;
+                                green_out <= conv_pixel_in;
+                                blue_out  <= conv_pixel_in >> 1;
+                            end
+                        endcase
+                    end
+                    // Show kernel indicator in top-right corner
+                    else if (pixel_x > 580 && pixel_x < 620 && pixel_y < 40) begin
+                        case (conv_kernel_select)
+                            2'h0: begin red_out <= 8'hFF; green_out <= 8'hFF; blue_out <= 8'hFF; end // White - Identity
+                            2'h1: begin red_out <= 8'hFF; green_out <= 8'h00; blue_out <= 8'h00; end // Red - Edge
+                            2'h2: begin red_out <= 8'h00; green_out <= 8'h80; blue_out <= 8'hFF; end // Blue - Blur
+                            2'h3: begin red_out <= 8'hFF; green_out <= 8'hFF; blue_out <= 8'h00; end // Yellow - Sharpen
+                        endcase
+                    end
+                    else begin
+                        // Show background test pattern that convolution will process
+                        case (conv_kernel_select) // Pattern selection based on kernel
+                            2'h0: begin // Checkerboard
+                                red_out   <= ((pixel_x[4] ^ pixel_y[4]) & 1) ? 8'h80 : 8'h20;
+                                green_out <= ((pixel_x[4] ^ pixel_y[4]) & 1) ? 8'h80 : 8'h20;
+                                blue_out  <= ((pixel_x[4] ^ pixel_y[4]) & 1) ? 8'h80 : 8'h20;
+                            end
+                            2'h1: begin // Horizontal gradient
+                                red_out   <= pixel_x[7:0] >> 1;
+                                green_out <= pixel_x[7:0] >> 1;
+                                blue_out  <= pixel_x[7:0] >> 1;
+                            end
+                            2'h2: begin // Geometric shapes
+                                if ((pixel_x > 200 && pixel_x < 400 && pixel_y > 150 && pixel_y < 350)) begin
+                                    red_out   <= 8'h60;
+                                    green_out <= 8'h60;
+                                    blue_out  <= 8'h60;
+                                end else begin
+                                    red_out   <= 8'h20;
+                                    green_out <= 8'h20;
+                                    blue_out  <= 8'h20;
+                                end
+                            end
+                            2'h3: begin // Stripes
+                                red_out   <= pixel_x[5] ? 8'h60 : 8'h20;
+                                green_out <= pixel_x[5] ? 8'h60 : 8'h20;
+                                blue_out  <= pixel_x[5] ? 8'h60 : 8'h20;
+                            end
+                        endcase
                     end
                 end else if (shader_select == SHADER_RADIAL) begin
                     // For radial, use distance as brightness
